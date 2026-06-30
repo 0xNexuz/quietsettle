@@ -839,6 +839,7 @@ await escrow.createDeal(vendor, verifier, encrypted.handles[0], encrypted.inputP
       $("#walletShort").textContent = label;
       $("#walletDot").style.background = connected ? "var(--ok)" : "var(--warn)";
       $("#walletDot").style.boxShadow = connected ? "0 0 0 4px rgba(100,217,108,.12)" : "none";
+      $("#connectWallet").title = connected ? "Disconnect QuietSettle session" : "Connect wallet";
     };
     const toast = (message) => {
       const node = $("#toast");
@@ -890,6 +891,10 @@ await escrow.createDeal(vendor, verifier, encrypted.handles[0], encrypted.inputP
       if (!provider || state.discoveredProviders.includes(provider)) return;
       state.discoveredProviders.push(provider);
       if (!state.walletProvider) state.walletProvider = provider;
+      provider.on?.("accountsChanged", handleAccountsChanged);
+      provider.on?.("chainChanged", () => {
+        if (state.wallet) toast("Network changed. QuietSettle will use the active wallet network.");
+      });
     }
 
     function discoverWalletProviders() {
@@ -946,6 +951,10 @@ await escrow.createDeal(vendor, verifier, encrypted.handles[0], encrypted.inputP
     }
 
     async function connectWallet() {
+      if (state.wallet) {
+        disconnectWallet();
+        return;
+      }
       const injected = getWalletProvider();
       if (!injected) {
         setWalletStatus("No wallet");
@@ -964,6 +973,28 @@ await escrow.createDeal(vendor, verifier, encrypted.handles[0], encrypted.inputP
         setWalletStatus("Connect wallet");
         toast(error.shortMessage || error.message || "Wallet connection rejected.");
       }
+    }
+
+    function disconnectWallet() {
+      state.wallet = "";
+      state.provider = null;
+      state.signer = null;
+      setWalletStatus("Connect wallet");
+      toast("Wallet disconnected from this QuietSettle session. To revoke site permissions completely, remove the connection inside your wallet.");
+    }
+
+    function handleAccountsChanged(accounts) {
+      if (!accounts?.length) {
+        disconnectWallet();
+        return;
+      }
+      state.wallet = accounts[0];
+      setWalletStatus(short(state.wallet), true);
+      if (state.walletProvider) {
+        state.provider = new BrowserProvider(state.walletProvider);
+        state.provider.getSigner().then((signer) => { state.signer = signer; }).catch(() => {});
+      }
+      toast(`Wallet account changed: ${state.wallet}`);
     }
 
     async function readSelectedDeal() {
