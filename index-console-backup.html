@@ -1,0 +1,1432 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>QuietSettle - Confidential Milestone Escrow</title>
+  <meta name="description" content="Production-ready confidential milestone escrow console for Zama FHEVM." />
+  <meta name="theme-color" content="#abe338" />
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <style>
+    :root {
+      --zama: #abe338;
+      --ink: #050505;
+      --bg: #080a0a;
+      --panel: #111414;
+      --panel-2: #171b1b;
+      --line: rgba(255,255,255,.11);
+      --line-strong: rgba(171,227,56,.48);
+      --paper: #f8f8f2;
+      --soft: #d9d9d9;
+      --muted: #8e9696;
+      --ok: #61d760;
+      --warn: #ffd84f;
+      --bad: #ff7b68;
+      --ivory: #f4f2ed;
+      --ivory-2: #ebe8df;
+      --charcoal: #111111;
+      --radius: 8px;
+      --shadow: 0 18px 46px rgba(0,0,0,.24);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--paper);
+      background:
+        radial-gradient(circle at 78% 6%, rgba(171,227,56,.12), transparent 26%),
+        linear-gradient(135deg, #050505, #0b0d0d 54%, #121515);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    button, input, select { font: inherit; letter-spacing: 0; }
+    button { cursor: pointer; }
+    .mono { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
+
+    .shell {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 270px minmax(0, 1fr) 370px;
+      grid-template-rows: 70px minmax(0, 1fr) 52px;
+    }
+
+    body[data-view="overview"] .shell {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-rows: 48px minmax(0, 1fr) 44px;
+      background: var(--ivory);
+    }
+
+    .topbar {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: 270px minmax(0, 1fr) 370px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(5,5,5,.82);
+      backdrop-filter: blur(18px);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    body[data-view="overview"] .topbar {
+      grid-template-columns: 220px minmax(0, 1fr) 220px;
+      min-height: 48px;
+      border-color: rgba(0,0,0,.11);
+      background: rgba(244,242,237,.84);
+      color: var(--charcoal);
+      backdrop-filter: blur(18px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 22px;
+      border-right: 1px solid var(--line);
+      font-weight: 780;
+      font-size: 20px;
+    }
+
+    body[data-view="overview"] .brand {
+      font-size: 14px;
+      color: var(--charcoal);
+      border-color: rgba(0,0,0,.11);
+      justify-content: flex-start;
+      padding: 0 22px;
+    }
+
+    body[data-view="overview"] .brand span { display: inline; }
+    body[data-view="overview"] .brand img { width: 24px; height: 24px; border-radius: 7px; object-fit: contain; }
+
+    .brand img { width: 35px; height: 35px; border-radius: 8px; }
+
+    .command {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 0 24px;
+      min-width: 0;
+    }
+
+    body[data-view="overview"] .command {
+      justify-content: center;
+      padding: 0 12px;
+    }
+
+    .context {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      min-width: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .context b { color: var(--paper); font-weight: 650; }
+    body[data-view="overview"] .context { display: none; }
+    body[data-view="overview"] .context b { color: var(--charcoal); }
+
+    .top-links {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      min-width: 0;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .top-links::-webkit-scrollbar { display: none; }
+
+    .top-links button, .top-links a {
+      min-height: 34px;
+      border: 1px solid transparent;
+      border-radius: 999px;
+      padding: 7px 10px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 720;
+      white-space: nowrap;
+    }
+
+    .top-links button:hover, .top-links a:hover {
+      color: var(--paper);
+      background: rgba(255,255,255,.06);
+      border-color: rgba(255,255,255,.1);
+    }
+
+    body[data-view="overview"] .top-links {
+      justify-content: center;
+    }
+
+    body[data-view="overview"] .top-links button,
+    body[data-view="overview"] .top-links a {
+      min-height: 30px;
+      color: rgba(17,17,17,.58);
+      font-size: 11px;
+      font-weight: 660;
+    }
+
+    body[data-view="overview"] .top-links button:hover,
+    body[data-view="overview"] .top-links a:hover {
+      color: var(--charcoal);
+      background: rgba(0,0,0,.045);
+      border-color: rgba(0,0,0,.08);
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--zama);
+      box-shadow: 0 0 0 4px rgba(171,227,56,.11);
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 0 18px;
+      border-left: 1px solid var(--line);
+    }
+
+    body[data-view="overview"] .top-actions {
+      border-color: rgba(0,0,0,.11);
+    }
+
+    body[data-view="overview"] .health,
+    body[data-view="overview"] #settingsBtn {
+      display: none;
+    }
+
+    .health {
+      min-height: 34px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 10px;
+      border: 1px solid rgba(97,215,96,.2);
+      border-radius: 999px;
+      color: var(--ok);
+      background: rgba(97,215,96,.08);
+      font-size: 12px;
+      font-weight: 760;
+      white-space: nowrap;
+    }
+
+    .side {
+      grid-row: 2 / 4;
+      border-right: 1px solid var(--line);
+      background: rgba(8,10,10,.64);
+      padding: 20px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .side-id {
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      gap: 12px;
+      align-items: center;
+      padding: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.35;
+    }
+
+    .side-id img { width: 44px; height: 44px; border-radius: 8px; }
+    .side-id b { display: block; color: var(--paper); font-size: 15px; }
+
+    .nav {
+      display: grid;
+      gap: 6px;
+    }
+
+    .nav-group {
+      margin: 10px 10px 3px;
+      color: rgba(255,255,255,.42);
+      font-size: 11px;
+      font-weight: 820;
+      text-transform: uppercase;
+    }
+
+    .nav button {
+      display: grid;
+      grid-template-columns: 24px minmax(0, 1fr) auto;
+      gap: 11px;
+      align-items: center;
+      min-height: 44px;
+      border: 1px solid transparent;
+      border-radius: var(--radius);
+      padding: 10px;
+      background: transparent;
+      color: var(--muted);
+      text-align: left;
+      font-weight: 670;
+    }
+
+    .nav button.active {
+      color: var(--paper);
+      border-color: rgba(171,227,56,.28);
+      background: rgba(255,255,255,.07);
+      box-shadow: inset 3px 0 0 var(--zama);
+    }
+
+    .nav small {
+      min-width: 25px;
+      min-height: 25px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      color: var(--soft);
+      background: rgba(255,255,255,.08);
+      font-size: 12px;
+    }
+
+    .side-card {
+      margin-top: auto;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: linear-gradient(145deg, rgba(255,255,255,.06), rgba(255,255,255,.025));
+    }
+
+    .mini-stack {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .mini-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .main {
+      padding: 18px;
+      min-width: 0;
+      overflow: auto;
+    }
+
+    body[data-view="overview"] .main {
+      grid-column: 1 / -1;
+      padding: 0 14px;
+      background: var(--ivory);
+    }
+
+    body[data-view="overview"] .side,
+    body[data-view="overview"] .inspector {
+      display: none;
+    }
+
+    .inspector {
+      padding: 24px 18px;
+      border-left: 1px solid var(--line);
+      background: rgba(10,12,12,.74);
+      overflow: auto;
+    }
+
+    .footer {
+      grid-column: 2 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 0 22px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      background: rgba(5,5,5,.7);
+      font-size: 13px;
+    }
+
+    body[data-view="overview"] .footer {
+      grid-column: 1 / -1;
+      color: rgba(17,17,17,.45);
+      border-color: rgba(0,0,0,.09);
+      background: var(--ivory);
+      font-size: 11px;
+    }
+
+    .panel {
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: var(--radius);
+      background: linear-gradient(145deg, rgba(255,255,255,.055), rgba(255,255,255,.022));
+      box-shadow: var(--shadow);
+    }
+
+    .hero {
+      min-height: calc(100vh - 140px);
+      padding: 0;
+      display: grid;
+      grid-template-rows: auto minmax(420px, 1fr);
+      gap: 0;
+      overflow: hidden;
+      position: relative;
+      color: var(--charcoal);
+      border-color: rgba(0,0,0,.12);
+      background: var(--ivory);
+      box-shadow: none;
+    }
+
+    .hero::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: .32;
+      background-image:
+        linear-gradient(rgba(0,0,0,.055) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,0,0,.055) 1px, transparent 1px);
+      background-size: 88px 88px;
+      mask-image: linear-gradient(to bottom, black, transparent 42%);
+    }
+
+    .hero > * { position: relative; z-index: 1; }
+
+    .hero-copy {
+      min-height: 335px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 48px 28px 32px;
+      border-bottom: 1px solid rgba(0,0,0,.08);
+    }
+
+    .hero-copy-inner {
+      max-width: 820px;
+      display: grid;
+      justify-items: center;
+    }
+
+    .hero-kicker {
+      color: rgba(17,17,17,.56);
+      font-size: 12px;
+      font-weight: 720;
+      margin-top: 14px;
+    }
+
+    .hero-visual {
+      position: relative;
+      min-height: 460px;
+      margin: 0 0 12px;
+      border-radius: 0 0 var(--radius) var(--radius);
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 53% 28%, rgba(17,17,17,.38), transparent 9%),
+        radial-gradient(circle at 50% 54%, rgba(171,227,56,.62), transparent 13%),
+        radial-gradient(circle at 42% 60%, rgba(89,209,255,.58), transparent 20%),
+        radial-gradient(circle at 65% 67%, rgba(255,210,8,.5), transparent 17%),
+        radial-gradient(circle at 35% 38%, rgba(72,130,255,.58), transparent 24%),
+        linear-gradient(180deg, rgba(244,242,237,.88) 0%, rgba(213,230,255,.72) 22%, rgba(72,130,255,.86) 100%);
+    }
+
+    .hero-visual::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background:
+        linear-gradient(to bottom, rgba(244,242,237,.92), transparent 31%),
+        radial-gradient(ellipse at center, transparent 0 36%, rgba(244,242,237,.16) 57%, rgba(244,242,237,.3) 100%);
+      backdrop-filter: blur(18px) saturate(1.15);
+    }
+
+    .hero-visual::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 16%;
+      width: min(48vw, 560px);
+      height: 62%;
+      transform: translateX(-50%);
+      border: 1px solid rgba(255,255,255,.58);
+      background:
+        linear-gradient(rgba(255,255,255,.34) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.3) 1px, transparent 1px);
+      background-size: 78px 78px;
+      box-shadow:
+        0 1px 0 rgba(255,255,255,.56),
+        inset 0 -1px 0 rgba(255,255,255,.52);
+      opacity: .76;
+      mask-image: linear-gradient(to bottom, black 0 70%, transparent 100%);
+    }
+
+    .scan-lines {
+      position: absolute;
+      left: 50%;
+      bottom: 42px;
+      width: min(78vw, 820px);
+      height: 92px;
+      transform: translateX(-50%);
+      opacity: .7;
+      background: repeating-linear-gradient(to bottom, transparent 0 16px, rgba(255,255,255,.72) 17px, transparent 18px);
+    }
+
+    .cross-grid {
+      position: absolute;
+      left: 50%;
+      top: 22%;
+      width: 285px;
+      height: 255px;
+      transform: translateX(-50%);
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      grid-template-rows: repeat(5, 1fr);
+      place-items: center;
+      opacity: .74;
+      z-index: 2;
+    }
+
+    .cross-grid span {
+      width: 16px;
+      height: 16px;
+      position: relative;
+    }
+
+    .cross-grid span::before,
+    .cross-grid span::after {
+      content: "";
+      position: absolute;
+      background: rgba(255,255,255,.76);
+    }
+
+    .cross-grid span::before { width: 1px; height: 16px; left: 7px; top: 0; }
+    .cross-grid span::after { width: 16px; height: 1px; left: 0; top: 7px; }
+
+    .hero-ledger {
+      position: absolute;
+      right: clamp(18px, 4vw, 56px);
+      bottom: clamp(18px, 4vw, 56px);
+      z-index: 3;
+      width: min(360px, calc(100% - 36px));
+      border: 1px solid rgba(255,255,255,.42);
+      border-radius: var(--radius);
+      background: rgba(8,10,10,.64);
+      color: var(--paper);
+      padding: 14px;
+      backdrop-filter: blur(18px);
+      box-shadow: 0 22px 70px rgba(0,0,0,.22);
+    }
+
+    .hero-ledger-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid rgba(255,255,255,.14);
+      color: rgba(255,255,255,.7);
+      font-size: 11px;
+      font-weight: 760;
+    }
+
+    .hero-ledger-head b { color: var(--paper); font-size: 12px; }
+
+    .hero-ledger .mini-row {
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255,255,255,.11);
+    }
+
+    .hero-ledger .mini-row:last-child { border-bottom: 0; }
+
+    .hero-ledger .mini-row span { color: rgba(255,255,255,.6); }
+    .hero-ledger .mini-row b { color: rgba(255,255,255,.86); }
+
+    .tiny-action {
+      min-height: 26px;
+      border: 1px solid rgba(255,255,255,.18);
+      border-radius: 4px;
+      background: rgba(255,255,255,.08);
+      color: rgba(255,255,255,.78);
+      padding: 5px 8px;
+      font-size: 11px;
+      font-weight: 720;
+    }
+
+    .overview-console {
+      margin-top: 0;
+      padding: 0;
+      border: 1px solid rgba(255,255,255,.1);
+      border-radius: var(--radius) var(--radius) 0 0;
+      background:
+        linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.038) 1px, transparent 1px),
+        #0b0c0d;
+      background-size: 240px 80px;
+      color: var(--paper);
+    }
+
+    .overview-console .section-head {
+      padding: 32px 34px 24px;
+      border-bottom: 1px solid rgba(255,255,255,.09);
+    }
+
+    .overview-insights {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      border-bottom: 1px solid rgba(255,255,255,.09);
+    }
+
+    .insight {
+      min-height: 170px;
+      padding: 28px 34px;
+      border-right: 1px solid rgba(255,255,255,.09);
+      display: grid;
+      align-content: end;
+      gap: 12px;
+    }
+
+    .insight:last-child { border-right: 0; }
+
+    .insight small {
+      color: rgba(171,227,56,.8);
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 820;
+    }
+
+    .insight p {
+      color: rgba(255,255,255,.62);
+      line-height: 1.45;
+      max-width: 360px;
+    }
+
+    .overview-console .table-wrap {
+      margin: 28px 34px 34px;
+    }
+
+    h1, h2, h3, p { margin: 0; }
+    h1 {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(45px, 5.8vw, 86px);
+      line-height: .92;
+      font-weight: 520;
+      max-width: 900px;
+      letter-spacing: -.01em;
+    }
+
+    h2 { font-size: clamp(26px, 2.6vw, 40px); line-height: 1; font-weight: 610; }
+    h3 { font-size: 18px; line-height: 1.15; font-weight: 720; }
+    .muted { color: var(--muted); }
+    .soft { color: var(--soft); }
+    .lead { margin-top: 18px; max-width: 560px; color: var(--soft); font-size: 18px; line-height: 1.45; }
+    .hero .lead { color: rgba(17,17,17,.58); font-size: 15px; max-width: 620px; }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      color: var(--zama);
+      text-transform: uppercase;
+      font-size: 12px;
+      font-weight: 820;
+    }
+
+    .btn, .icon {
+      min-height: 39px;
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: 6px;
+      background: rgba(255,255,255,.055);
+      color: var(--paper);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 9px 13px;
+      font-size: 13px;
+      font-weight: 760;
+      white-space: nowrap;
+    }
+
+    .btn.primary { color: #071006; background: var(--zama); border-color: var(--zama); }
+    .hero .btn.primary { color: var(--ivory); background: var(--charcoal); border-color: var(--charcoal); }
+    .hero .btn { color: var(--charcoal); border-color: rgba(17,17,17,.14); background: rgba(255,255,255,.6); }
+    body[data-view="overview"] .top-actions .btn.primary {
+      min-height: 30px;
+      color: var(--charcoal);
+      background: rgba(255,255,255,.54);
+      border-color: rgba(0,0,0,.12);
+      font-size: 11px;
+      border-radius: 4px;
+    }
+    .btn.danger { color: var(--bad); border-color: rgba(255,123,104,.38); }
+    .icon { min-width: 39px; padding: 0 10px; }
+    .icon.small { width: 30px; min-height: 30px; font-size: 12px; }
+
+    .toolbar, .section-head, .cta-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .cta-row { justify-content: flex-start; margin-top: 22px; }
+
+    .grid { display: grid; gap: 14px; }
+    .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .stat, .tile {
+      min-height: 110px;
+      padding: 16px;
+      border: 1px solid rgba(255,255,255,.095);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.032);
+    }
+
+    .stat strong { display: block; margin-top: 12px; font-size: 28px; font-weight: 620; }
+
+    .stat .delta {
+      display: inline-flex;
+      margin-top: 10px;
+      color: var(--ok);
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    .table-wrap {
+      margin-top: 18px;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(0,0,0,.2);
+    }
+
+    table { width: 100%; border-collapse: collapse; min-width: 850px; }
+    th, td {
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      color: var(--soft);
+      font-size: 13px;
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    th {
+      color: rgba(255,255,255,.52);
+      font-size: 12px;
+      font-weight: 780;
+      text-transform: uppercase;
+    }
+
+    .row-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    tr { cursor: pointer; }
+    tr:hover td, tr.selected td { background: rgba(171,227,56,.055); }
+    tr.selected td:first-child { box-shadow: inset 3px 0 0 var(--zama); }
+
+    .badge {
+      width: fit-content;
+      min-height: 26px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.07);
+      color: var(--soft);
+      font-size: 12px;
+      font-weight: 760;
+      white-space: nowrap;
+    }
+
+    .badge.ok { color: var(--ok); border-color: rgba(97,215,96,.26); background: rgba(97,215,96,.1); }
+    .badge.warn { color: var(--warn); border-color: rgba(255,216,79,.26); background: rgba(255,216,79,.1); }
+    .badge.lock { color: var(--zama); border-color: rgba(171,227,56,.25); background: rgba(171,227,56,.08); }
+    .badge.zama { color: #071006; border-color: var(--zama); background: var(--zama); }
+
+    .field { display: grid; gap: 7px; }
+    label { color: rgba(255,255,255,.75); font-size: 12px; font-weight: 780; }
+    input, select {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid rgba(255,255,255,.14);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+      background: rgba(0,0,0,.34);
+      color: var(--paper);
+      outline: none;
+    }
+
+    input:focus, select:focus { border-color: var(--line-strong); box-shadow: 0 0 0 3px rgba(171,227,56,.08); }
+
+    .workspace {
+      display: grid;
+      grid-template-columns: minmax(0, .86fr) minmax(340px, 1.14fr);
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    .drawer { padding: 18px; }
+
+    .kv {
+      display: grid;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .kv div {
+      display: grid;
+      grid-template-columns: minmax(105px, .56fr) minmax(0, 1fr);
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      color: var(--soft);
+      font-size: 13px;
+    }
+
+    .progress {
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.12);
+      overflow: hidden;
+      margin-top: 14px;
+    }
+
+    .progress span { display: block; height: 100%; background: var(--zama); border-radius: inherit; transition: width .25s ease; }
+
+    .rail {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 10px;
+    }
+
+    .rail-step {
+      min-height: 140px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.04);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .rail-step.active { border-color: var(--line-strong); background: rgba(171,227,56,.08); }
+
+    .console {
+      min-height: 118px;
+      max-height: 220px;
+      overflow: auto;
+      padding: 14px;
+      border: 1px solid rgba(171,227,56,.24);
+      border-radius: var(--radius);
+      background: rgba(171,227,56,.07);
+      color: var(--soft);
+      white-space: pre-wrap;
+      font-size: 13px;
+    }
+
+    .tabs {
+      display: inline-flex;
+      padding: 3px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(0,0,0,.28);
+    }
+
+    .tabs button {
+      min-height: 34px;
+      border: 0;
+      border-radius: 999px;
+      padding: 7px 12px;
+      background: transparent;
+      color: var(--muted);
+      font-weight: 760;
+    }
+
+    .tabs button.active { color: #071006; background: var(--zama); }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      max-width: min(620px, calc(100vw - 36px));
+      padding: 14px 16px;
+      border: 1px solid rgba(171,227,56,.35);
+      border-radius: var(--radius);
+      background: rgba(8,12,10,.96);
+      color: var(--paper);
+      box-shadow: var(--shadow);
+      z-index: 30;
+      transform: translateY(18px);
+      opacity: 0;
+      pointer-events: none;
+      transition: .25s ease;
+      white-space: pre-wrap;
+    }
+
+    .toast.show { transform: none; opacity: 1; }
+
+    .preview-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .preview-strip a {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: rgba(255,255,255,.04);
+    }
+
+    .preview-strip img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      object-fit: cover;
+    }
+
+    .preview-strip span { display: block; padding: 9px; color: var(--muted); font-size: 12px; }
+
+    @media (max-width: 1180px) {
+      .shell { grid-template-columns: 86px minmax(0, 1fr); }
+      .topbar { grid-template-columns: 86px minmax(0, 1fr); }
+      .brand span, .side-id span, .nav span, .nav small, .side-card { display: none; }
+      .brand { justify-content: center; padding: 0; }
+      body[data-view="overview"] .topbar { grid-template-columns: 190px minmax(0, 1fr) 150px; }
+      body[data-view="overview"] .brand { justify-content: flex-start; padding: 0 18px; }
+      body[data-view="overview"] .brand span { display: inline; }
+      .top-actions { grid-column: 2; justify-content: flex-start; border-left: 0; padding: 8px 24px; }
+      body[data-view="overview"] .top-actions { grid-column: auto; justify-content: flex-end; padding: 0 12px; border-left: 1px solid rgba(0,0,0,.11); }
+      .inspector { grid-column: 2; border-left: 0; border-top: 1px solid var(--line); }
+      .footer { grid-column: 2; }
+      .hero, .workspace { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 760px) {
+      .shell, .topbar { display: block; }
+      .side { display: none; }
+      .main, .inspector { padding: 16px; }
+      .grid.two, .grid.three, .grid.four, .rail, .preview-strip { grid-template-columns: 1fr; }
+      .footer { display: grid; height: auto; min-height: 52px; padding: 12px 16px; }
+      h1 { font-size: 46px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header class="topbar">
+      <a class="brand" href="#overview" data-view-link="overview"><img src="./logo.svg" alt="" /><span>QuietSettle</span></a>
+      <div class="command">
+        <div class="context">
+          <span style="display:inline-flex; align-items:center; gap:8px"><span class="dot"></span><b>Sepolia</b></span>
+          <span>Contract <b class="mono" id="topContract">not set</b></span>
+          <span>Deal <b class="mono" id="topDeal">0</b></span>
+        </div>
+        <nav class="top-links" aria-label="Primary">
+          <button data-jump="registry">Deals</button>
+          <button data-jump="create">Create Deal</button>
+          <button data-jump="approve">Approvals</button>
+          <button data-jump="decrypt">Decrypt</button>
+          <button data-jump="developer">API</button>
+          <a href="./QuietSettle.md">Docs</a>
+        </nav>
+      </div>
+      <div class="top-actions">
+        <span class="health"><span class="dot"></span>Healthy</span>
+        <button class="btn" id="settingsBtn">Settings</button>
+        <button class="btn primary" id="connectWallet">Connect</button>
+      </div>
+    </header>
+
+    <aside class="side">
+      <div class="side-id">
+        <img src="./logo.svg" alt="" />
+        <span><b>QuietSettle</b>Confidential milestone escrow</span>
+      </div>
+      <nav class="nav" id="nav" aria-label="Workspace"></nav>
+      <div class="side-card">
+        <span class="badge ok">FHEVM ready</span>
+        <p class="muted" style="margin-top:12px; font-size:13px; line-height:1.45">Only permitted parties can decrypt confidential invoice values.</p>
+        <div class="mini-stack">
+          <div class="mini-row"><span>Relayer</span><b>Ready</b></div>
+          <div class="mini-row"><span>Network</span><b>Sepolia</b></div>
+          <div class="mini-row"><span>Privacy</span><b>FHEVM</b></div>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main" id="view"></main>
+    <aside class="inspector" id="inspector"></aside>
+    <footer class="footer">
+      <span>QuietSettle is built for Zama FHEVM. Amounts are encrypted; settlement state remains auditable.</span>
+      <span>Privacy by default · On-chain escrow · Sepolia first</span>
+    </footer>
+  </div>
+  <div class="toast mono" id="toast"></div>
+
+  <script type="module">
+    import { BrowserProvider, Contract, formatEther, id, isAddress, parseEther, ZeroAddress } from "https://esm.sh/ethers@6.13.5";
+
+    const escrowAbi = [
+      "function createDeal(address vendor,address verifier,bytes32 encryptedAmount,bytes inputProof,bytes32 memoHash) returns (uint256)",
+      "function fund(uint256 dealId) payable",
+      "function approveByBuyer(uint256 dealId)",
+      "function approveByVerifier(uint256 dealId)",
+      "function release(uint256 dealId)",
+      "function refund(uint256 dealId)",
+      "function getDeal(uint256 dealId) view returns (address buyer,address vendor,address verifier,bytes32 memoHash,uint256 deposit,bool funded,bool buyerApproved,bool verifierApproved,bool released)"
+    ];
+
+    const refs = [
+      ["Command", "./quietsettle-image-sections/section-01-product-command-hero.png"],
+      ["Deals", "./quietsettle-image-sections/section-02-deal-registry.png"],
+      ["Workspace", "./quietsettle-image-sections/section-03-deal-workspace.png"],
+      ["Create", "./quietsettle-image-sections/section-04-create-deal-flow.png"],
+      ["Approve", "./quietsettle-image-sections/section-05-fund-approve-flow.png"],
+      ["Settle", "./quietsettle-image-sections/section-06-release-refund-flow.png"],
+      ["Decrypt", "./quietsettle-image-sections/section-07-confidential-decryption.png"],
+      ["Developer", "./quietsettle-image-sections/section-08-developer-reference-cta.png"]
+    ];
+
+    const nav = [
+      { group: "Operations" },
+      { id: "overview", icon: "C", label: "Overview", count: "" },
+      { id: "registry", icon: "D", label: "Deal Registry", count: "4" },
+      { id: "workspace", icon: "W", label: "Workspace", count: "" },
+      { id: "create", icon: "+", label: "Create Deal", count: "" },
+      { id: "approve", icon: "A", label: "Approvals", count: "2" },
+      { id: "settle", icon: "S", label: "Settlement", count: "1" },
+      { id: "decrypt", icon: "D", label: "Decrypt", count: "" },
+      { group: "Developer" },
+      { id: "developer", icon: "{ }", label: "Docs & API", count: "" },
+      { id: "settle", icon: "T", label: "Transactions", count: "" },
+      { id: "decrypt", icon: "K", label: "Access Keys", count: "" }
+    ];
+    const deals = [
+      { id: 0, code: "QS-2026-0001", buyer: "0x7B73...C9d2", vendor: "0x9cE1...d2F4", verifier: "0xA1f8...2b9C", counterparty: "Acme Labs", memo: "0x91bd...d4e7", handle: "euint64: 0x6f...a3c9", deposit: "0.42", milestones: "5 / 5", progress: 100, status: "Ready to release", kind: "ok", funded: true, buyerApproved: true, verifierApproved: true, released: false, updated: "2m ago" },
+      { id: 1, code: "QS-2026-0002", buyer: "0x7B73...C9d2", vendor: "0xD91a...3b8E", verifier: "0xF43d...991A", counterparty: "BuildWorks", memo: "0x39bd...f7C2", handle: "euint64: 0x8a...1d4e", deposit: "0.18", milestones: "3 / 4", progress: 75, status: "Awaiting verifier", kind: "warn", funded: true, buyerApproved: true, verifierApproved: false, released: false, updated: "5m ago" },
+      { id: 2, code: "QS-2026-0003", buyer: "0x51Af...10dA", vendor: "0x8F7b...6cA9", verifier: "none", counterparty: "Infra Stack", memo: "0xC11e...aa2B", handle: "euint64: 0x2b...9f71", deposit: "0.31", milestones: "2 / 6", progress: 33, status: "Funded", kind: "ok", funded: true, buyerApproved: false, verifierApproved: true, released: false, updated: "1h ago" },
+      { id: 3, code: "QS-2026-0004", buyer: "0xA66d...Bb44", vendor: "0xA6d3...Bb44", verifier: "0x81F0...42cA", counterparty: "DeltaOps", memo: "0x17D3...e91F", handle: "euint64: 0x9e...7b21", deposit: "0.77", milestones: "4 / 4", progress: 100, status: "Released", kind: "ok", funded: true, buyerApproved: true, verifierApproved: true, released: true, updated: "3h ago" }
+    ];
+
+    const state = {
+      view: "overview",
+      selected: 1,
+      query: "",
+      filter: "All",
+      wallet: "",
+      provider: null,
+      signer: null,
+      contractAddress: localStorage.getItem("quietsettle.contract") || "",
+      relayerUrl: localStorage.getItem("quietsettle.relayer") || "",
+      txLog: "Ready. Connect a wallet and set a contract address to send on-chain actions."
+    };
+
+    const $ = (selector) => document.querySelector(selector);
+    const selectedDeal = () => deals.find((deal) => deal.id === state.selected) || deals[0];
+    const short = (value) => value ? `${value.slice(0, 6)}...${value.slice(-4)}` : "not set";
+    const badge = (deal) => `<span class="badge ${deal.kind}">${deal.status}</span>`;
+    const lock = (value) => `<span class="badge lock">LOCK ${value}</span>`;
+
+    function toast(message) {
+      const node = $("#toast");
+      node.textContent = message;
+      node.classList.add("show");
+      clearTimeout(node.timer);
+      node.timer = setTimeout(() => node.classList.remove("show"), 4200);
+    }
+
+    function setView(view) {
+      state.view = view;
+      history.replaceState(null, "", `#${view}`);
+      render();
+    }
+
+    function renderNav() {
+      $("#nav").innerHTML = nav.map((item) => {
+        if (item.group) return `<div class="nav-group">${item.group}</div>`;
+        return `<button class="${state.view === item.id ? "active" : ""}" data-view="${item.id}"><b>${item.icon}</b><span>${item.label}</span>${item.count ? `<small>${item.count}</small>` : "<small></small>"}</button>`;
+      }).join("");
+      $("#nav").querySelectorAll("[data-view]").forEach((button) => button.addEventListener("click", () => setView(button.dataset.view)));
+    }
+
+    function render() {
+      document.body.dataset.view = state.view;
+      renderNav();
+      $("#topContract").textContent = short(state.contractAddress);
+      $("#topDeal").textContent = String(selectedDeal().id);
+      $("#view").innerHTML = screens[state.view]();
+      $("#inspector").innerHTML = inspector();
+      wire();
+    }
+
+    function filteredDeals() {
+      return deals.filter((deal) => {
+        const haystack = `${deal.code} ${deal.counterparty} ${deal.vendor} ${deal.status}`.toLowerCase();
+        const matchesQuery = haystack.includes(state.query.toLowerCase());
+        const matchesFilter = state.filter === "All" || deal.status === state.filter;
+        return matchesQuery && matchesFilter;
+      });
+    }
+
+    function rows() {
+      return filteredDeals().map((deal) => `
+        <tr class="${deal.id === state.selected ? "selected" : ""}" data-select="${deal.id}">
+          <td><strong>${deal.code}</strong><br><span class="muted mono">${deal.memo}</span></td>
+          <td>${deal.counterparty}<br><span class="muted mono">${deal.vendor}</span></td>
+          <td>${deal.milestones}</td>
+          <td>${lock(deal.handle)}</td>
+          <td>${badge(deal)}</td>
+          <td>${deal.updated}</td>
+        </tr>
+      `).join("");
+    }
+
+    const screens = {
+      overview: () => {
+        const ready = deals.filter((deal) => deal.status === "Ready to release").length;
+        return `
+          <section class="panel hero">
+            <div class="hero-copy">
+              <div class="hero-copy-inner">
+                <h1>Private escrow for work that cannot leak.</h1>
+                <p class="hero-kicker">Confidential milestone settlement on Zama FHEVM</p>
+                <div class="cta-row" style="justify-content:center"><button class="btn primary" data-jump="create">Brief the escrow</button><button class="btn" data-jump="registry">Open deal room</button></div>
+              </div>
+            </div>
+            <div class="hero-visual" aria-label="Encrypted settlement field">
+              <div class="cross-grid">${Array.from({ length: 25 }, () => "<span></span>").join("")}</div>
+              <div class="scan-lines"></div>
+              <div class="hero-ledger">
+                <div class="hero-ledger-head"><span>Workspace cache</span><button class="tiny-action" data-read-current>Refresh selected</button></div>
+                <div class="mini-row"><span>Loaded deals</span><b>${deals.length}</b></div>
+                <div class="mini-row"><span>Ready in cache</span><b>${ready}</b></div>
+                <div class="mini-row"><span>Selected handle</span><b class="mono">${selectedDeal().handle}</b></div>
+                <div class="mini-row"><span>Live source</span><b>${state.contractAddress ? "Contract set" : "Set contract"}</b></div>
+              </div>
+            </div>
+          </section>
+          <section class="overview-console">
+            <div class="overview-insights">
+              <article class="insight"><small>Private terms</small><h3>Amounts stay encrypted as handles.</h3><p>Deal values are created through the relayer encryption path, then stored as FHEVM values instead of public invoice totals.</p></article>
+              <article class="insight"><small>Operational state</small><h3>Approvals remain auditable.</h3><p>Funding, buyer approval, verifier approval, release, and refund guards are visible without exposing confidential amounts.</p></article>
+              <article class="insight"><small>Real sync</small><h3>Contract reads are explicit.</h3><p>The registry starts from a workspace cache; selected deals can be refreshed from the configured Sepolia escrow contract.</p></article>
+            </div>
+            <div class="section-head"><div><h2>Active confidential deals</h2><p class="muted">A quiet ledger for funded deposits, approvals, encrypted values, and guarded release.</p></div><button class="btn primary" data-jump="create">Create deal</button></div>
+            <div class="table-wrap"><table><thead><tr><th>Deal</th><th>Counterparty</th><th>Milestones</th><th>Total</th><th>Status</th><th>Updated</th></tr></thead><tbody>${rows()}</tbody></table></div>
+          </section>
+        `;
+      },
+      registry: () => `
+        <div class="section-head"><div><span class="eyebrow">Deal registry</span><h2>Searchable escrow ledger</h2></div><button class="btn primary" data-jump="create">Create confidential deal</button></div>
+        <div class="toolbar" style="margin-top:18px">
+          <input id="search" placeholder="Search deal, counterparty, address, or status" value="${state.query}">
+          <select id="filter">${["All", "Funded", "Awaiting verifier", "Ready to release", "Released"].map((item) => `<option ${state.filter === item ? "selected" : ""}>${item}</option>`).join("")}</select>
+        </div>
+        <div class="table-wrap"><table><thead><tr><th>Deal</th><th>Counterparty</th><th>Milestones</th><th>Encrypted amount</th><th>Status</th><th>Updated</th></tr></thead><tbody>${rows()}</tbody></table></div>
+      `,
+      workspace: () => {
+        const deal = selectedDeal();
+        return `
+          <div class="section-head"><div><span class="eyebrow">Deal workspace</span><h2>${deal.code}</h2><p class="muted">${deal.counterparty} confidential milestone context</p></div>${badge(deal)}</div>
+          <div class="workspace">
+            <section class="panel drawer">
+              <h3>Approval rail</h3>
+              <div class="rail" style="margin-top:16px">
+                <div class="rail-step active"><b>Created</b><span class="badge ok">on-chain</span><p class="muted mono">${deal.memo}</p></div>
+                <div class="rail-step ${deal.funded ? "active" : ""}"><b>Funded</b><span class="badge ${deal.funded ? "ok" : "warn"}">${deal.funded ? "funded" : "pending"}</span><p class="muted">${deal.deposit} ETH</p></div>
+                <div class="rail-step ${deal.buyerApproved ? "active" : ""}"><b>Buyer</b><span class="badge ${deal.buyerApproved ? "ok" : "warn"}">${deal.buyerApproved ? "approved" : "open"}</span><p class="muted mono">${deal.buyer}</p></div>
+                <div class="rail-step ${deal.verifierApproved ? "active" : ""}"><b>Verifier</b><span class="badge ${deal.verifierApproved ? "ok" : "warn"}">${deal.verifierApproved ? "approved" : "waiting"}</span><p class="muted mono">${deal.verifier}</p></div>
+              </div>
+              <div class="progress"><span style="width:${deal.progress}%"></span></div>
+            </section>
+            <section class="panel drawer">
+              <h3>Contract context</h3>
+              <div class="kv">
+                <div><span>Buyer</span><b class="mono">${deal.buyer}</b></div>
+                <div><span>Vendor</span><b class="mono">${deal.vendor}</b></div>
+                <div><span>Verifier</span><b class="mono">${deal.verifier}</b></div>
+                <div><span>Memo hash</span><b class="mono">${deal.memo}</b></div>
+                <div><span>Deposit</span><b>${deal.deposit} ETH</b></div>
+                <div><span>Private amount</span><b>${lock(deal.handle)}</b></div>
+              </div>
+            </section>
+          </div>
+        `;
+      },
+      create: () => `
+        <div class="section-head"><div><span class="eyebrow">Create flow</span><h2>Draft encrypted milestone escrow</h2></div><span class="badge ok">Relayer path required</span></div>
+        <div class="workspace">
+          <form class="panel drawer" id="createForm">
+            <div class="grid two">
+              <div class="field"><label>Vendor address</label><input id="vendor" placeholder="0x..." autocomplete="off"></div>
+              <div class="field"><label>Verifier address</label><input id="verifier" placeholder="0x... optional" autocomplete="off"></div>
+              <div class="field"><label>Private amount</label><input id="amount" inputmode="numeric" placeholder="2500"></div>
+              <div class="field"><label>Memo reference</label><input id="memo" placeholder="invoice CID, PO number, or 0x hash"></div>
+            </div>
+            <div class="cta-row"><button class="btn primary" type="submit">Encrypt and create deal</button><button class="btn" id="previewCreate" type="button">Preview payload</button></div>
+          </form>
+          <section class="panel drawer">
+            <h3>Encryption preview</h3>
+            <div class="console mono" id="createPreview">createEncryptedInput(contract, wallet)
+  add64(privateAmount)
+  encrypt()
+  createDeal(vendor, verifier, handle, proof, memoHash)</div>
+            <div class="grid three" style="margin-top:14px"><div class="tile"><span class="badge lock">handle</span><p class="muted mono" style="margin-top:12px">euint64</p></div><div class="tile"><span class="badge lock">proof</span><p class="muted mono" style="margin-top:12px">inputProof</p></div><div class="tile"><span class="badge ok">allow</span><p class="muted" style="margin-top:12px">buyer/vendor/verifier</p></div></div>
+          </section>
+        </div>
+      `,
+      approve: () => {
+        const deal = selectedDeal();
+        return `
+          <div class="section-head"><div><span class="eyebrow">Fund and approve</span><h2>${deal.code}</h2></div>${badge(deal)}</div>
+          <div class="workspace">
+            <section class="panel drawer">
+              <h3>Transaction queue</h3>
+              <div class="grid two" style="margin-top:16px"><button class="btn primary" data-chain="fund">Fund escrow deposit</button><button class="btn" data-chain="approveBuyer">Buyer approve</button><button class="btn" data-chain="approveVerifier">Verifier approve</button><button class="btn" data-jump="settle">Review settlement</button></div>
+              <div class="field" style="margin-top:16px"><label>Deposit ETH</label><input id="deposit" inputmode="decimal" value="${deal.deposit}"></div>
+            </section>
+            <section class="panel drawer">
+              <h3>Readiness</h3>
+              <div class="rail" style="margin-top:16px"><div class="rail-step ${deal.funded ? "active" : ""}"><b>Deposit</b><span class="badge ${deal.funded ? "ok" : "warn"}">${deal.funded ? "funded" : "needed"}</span></div><div class="rail-step ${deal.buyerApproved ? "active" : ""}"><b>Buyer</b><span class="badge ${deal.buyerApproved ? "ok" : "warn"}">${deal.buyerApproved ? "signed" : "waiting"}</span></div><div class="rail-step ${deal.verifierApproved ? "active" : ""}"><b>Verifier</b><span class="badge ${deal.verifierApproved ? "ok" : "warn"}">${deal.verifierApproved ? "signed" : "waiting"}</span></div><div class="rail-step ${deal.funded && deal.buyerApproved && deal.verifierApproved ? "active" : ""}"><b>Release</b><span class="badge ${deal.funded && deal.buyerApproved && deal.verifierApproved ? "ok" : "warn"}">guarded</span></div></div>
+            </section>
+          </div>
+        `;
+      },
+      settle: () => {
+        const deal = selectedDeal();
+        return `
+          <div class="section-head"><div><span class="eyebrow">Release / refund</span><h2>Settlement controls</h2></div><span class="badge lock">${deal.handle}</span></div>
+          <div class="workspace">
+            <section class="panel drawer"><h3>Payout path</h3><div class="kv"><div><span>From</span><b>QuietSettle escrow</b></div><div><span>To vendor</span><b class="mono">${deal.vendor}</b></div><div><span>Refund buyer</span><b class="mono">${deal.buyer}</b></div><div><span>Guard</span><b>${deal.buyerApproved ? "refund locked after approval" : "refund available before approval"}</b></div></div><div class="cta-row"><button class="btn primary" data-chain="release">Release vendor payment</button><button class="btn danger" data-chain="refund">Refund buyer</button></div></section>
+            <section class="panel drawer"><h3>Escrow accounting</h3><div class="console mono">${state.txLog}</div></section>
+          </div>
+        `;
+      },
+      decrypt: () => {
+        const deal = selectedDeal();
+        return `
+          <div class="section-head"><div><span class="eyebrow">User decryption</span><h2>Reveal only to authorized parties</h2></div><span class="badge lock">${deal.handle}</span></div>
+          <div class="workspace">
+            <section class="panel drawer"><h3>EIP-712 request</h3><div class="kv"><div><span>Domain</span><b>Zama FHEVM</b></div><div><span>Deal</span><b>${deal.code}</b></div><div><span>Handle</span><b class="mono">${deal.handle}</b></div><div><span>Access</span><b>buyer, vendor, verifier</b></div></div><div class="cta-row"><button class="btn primary" id="signDecrypt">Sign decrypt request</button><button class="btn" id="copyHandle">Copy handle</button></div></section>
+            <section class="panel drawer"><h3>Decryption result</h3><div class="console mono" id="decryptResult">Waiting for wallet signature. The relayer SDK should receive the signed typed data and return the authorized clear value.</div></section>
+          </div>
+        `;
+      },
+      developer: () => `
+        <div class="section-head"><div><span class="eyebrow">Developer reference</span><h2>Copy-ready escrow integration</h2></div><a class="btn primary" href="./QuietSettle.md">Open docs</a></div>
+        <div class="workspace">
+          <section class="panel drawer"><h3>Configuration</h3><div class="grid two" style="margin-top:14px"><div class="field"><label>Contract address</label><input id="settingsContract" value="${state.contractAddress}" placeholder="0x..."></div><div class="field"><label>Relayer endpoint</label><input id="settingsRelayer" value="${state.relayerUrl}" placeholder="https://..."></div></div><div class="cta-row"><button class="btn primary" id="saveSettings">Save settings</button><button class="btn" id="readDeal">Read selected deal</button></div></section>
+          <section class="panel drawer"><h3>Integration snippet</h3><div class="console mono">const input = relayer.createEncryptedInput(contract, account);
+input.add64(BigInt(privateAmount));
+const encrypted = await input.encrypt();
+await escrow.createDeal(vendor, verifier, encrypted.handles[0], encrypted.inputProof, memoHash);</div></section>
+        </div>
+        <div class="preview-strip">${refs.map(([label, src]) => `<a href="${src}"><img src="${src}" alt="${label} interface reference"><span>${label}</span></a>`).join("")}</div>
+      `
+    };
+
+    function inspector() {
+      const deal = selectedDeal();
+      return `
+        <div class="section-head"><div><h3>${deal.code}</h3><p class="muted">${deal.counterparty}</p></div><button class="icon" data-copy="${deal.code}">Copy</button></div>
+        <div class="kv">
+          <div><span>Status</span><b>${deal.status}</b></div>
+          <div><span>Deposit</span><b>${deal.deposit} ETH</b></div>
+          <div><span>Milestones</span><b>${deal.milestones}</b></div>
+          <div><span>Encrypted</span><b class="mono">${deal.handle}</b></div>
+          <div><span>Buyer</span><b class="mono">${deal.buyer}</b></div>
+          <div><span>Vendor</span><b class="mono">${deal.vendor}</b></div>
+          <div><span>Verifier</span><b class="mono">${deal.verifier}</b></div>
+        </div>
+        <div class="progress"><span style="width:${deal.progress}%"></span></div>
+        <div class="cta-row"><button class="btn primary" data-jump="workspace">Open workspace</button><button class="btn" data-jump="decrypt">Decrypt</button></div>
+        <div class="side-card"><span class="badge ok">Live controls</span><p class="muted" style="margin-top:10px; font-size:13px; line-height:1.45">Every visible button either changes view, saves settings, signs, copies, or calls the escrow contract.</p></div>
+      `;
+    }
+
+    function getContract() {
+      if (!state.signer) throw new Error("Connect a wallet first.");
+      if (!isAddress(state.contractAddress)) throw new Error("Save a deployed escrow contract address first.");
+      return new Contract(state.contractAddress, escrowAbi, state.signer);
+    }
+
+    function normalizeMemoHash(value) {
+      const memo = value.trim();
+      if (/^0x[a-fA-F0-9]{64}$/.test(memo)) return memo;
+      if (!memo) throw new Error("Enter a memo reference.");
+      return id(memo);
+    }
+
+    async function connectWallet() {
+      if (!window.ethereum) return toast("No injected wallet found. Install MetaMask or another EIP-1193 wallet.");
+      try {
+        const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+        state.wallet = accounts[0] || "";
+        state.provider = new BrowserProvider(window.ethereum);
+        state.signer = await state.provider.getSigner();
+        $("#connectWallet").textContent = short(state.wallet);
+        toast(`Wallet connected: ${state.wallet}`);
+      } catch (error) {
+        toast(error.message || "Wallet connection rejected.");
+      }
+    }
+
+    async function runChain(action) {
+      try {
+        const contract = getContract();
+        const dealId = BigInt(selectedDeal().id);
+        let tx;
+        if (action === "fund") {
+          const deposit = $("#deposit")?.value || selectedDeal().deposit;
+          if (!deposit || Number(deposit) <= 0) throw new Error("Enter a positive ETH deposit.");
+          tx = await contract.fund(dealId, { value: parseEther(deposit) });
+        }
+        if (action === "approveBuyer") tx = await contract.approveByBuyer(dealId);
+        if (action === "approveVerifier") tx = await contract.approveByVerifier(dealId);
+        if (action === "release") tx = await contract.release(dealId);
+        if (action === "refund") tx = await contract.refund(dealId);
+        state.txLog = `Submitted ${action}:\n${tx.hash}`;
+        render();
+        await tx.wait();
+        state.txLog = `Confirmed ${action}:\n${tx.hash}`;
+        toast(state.txLog);
+        render();
+      } catch (error) {
+        state.txLog = error.shortMessage || error.message || "Transaction failed.";
+        toast(state.txLog);
+        render();
+      }
+    }
+
+    async function createDeal(event) {
+      event.preventDefault();
+      try {
+        const contract = getContract();
+        const vendor = $("#vendor").value.trim();
+        const verifier = $("#verifier").value.trim();
+        const amount = $("#amount").value.trim();
+        const memoHash = normalizeMemoHash($("#memo").value);
+        if (!isAddress(vendor)) throw new Error("Enter a valid vendor address.");
+        if (verifier && !isAddress(verifier)) throw new Error("Verifier must be blank or a valid address.");
+        if (!/^[0-9]+$/.test(amount)) throw new Error("Private amount must be an integer.");
+        if (!state.relayerUrl.startsWith("https://")) throw new Error("Save an HTTPS relayer endpoint.");
+        if (!window.zamaRelayer?.createEncryptedInput) throw new Error("Zama relayer SDK is not loaded. Load the official SDK before encrypted createDeal can be sent.");
+        const input = window.zamaRelayer.createEncryptedInput(await contract.getAddress(), state.wallet);
+        input.add64(BigInt(amount));
+        const encrypted = await input.encrypt();
+        const tx = await contract.createDeal(vendor, verifier || ZeroAddress, encrypted.handles[0], encrypted.inputProof, memoHash);
+        state.txLog = `Submitted createDeal:\n${tx.hash}`;
+        toast(state.txLog);
+        await tx.wait();
+        state.txLog = `Confirmed createDeal:\n${tx.hash}`;
+        toast(state.txLog);
+      } catch (error) {
+        state.txLog = error.shortMessage || error.message || "Create failed.";
+        toast(state.txLog);
+      }
+      render();
+    }
+
+    async function signDecrypt() {
+      try {
+        if (!state.signer) throw new Error("Connect a wallet first.");
+        const deal = selectedDeal();
+        const domain = { name: "QuietSettle", version: "1", chainId: 11155111, verifyingContract: state.contractAddress || ZeroAddress };
+        const types = { DecryptRequest: [{ name: "dealId", type: "uint256" }, { name: "handle", type: "string" }, { name: "purpose", type: "string" }] };
+        const value = { dealId: deal.id, handle: deal.handle, purpose: "View confidential milestone amount" };
+        const signature = await state.signer.signTypedData(domain, types, value);
+        $("#decryptResult").textContent = `Signed EIP-712 request:\n${signature}\n\nSend this signature to the Zama user-decryption flow with ${deal.handle}.`;
+      } catch (error) {
+        $("#decryptResult").textContent = error.shortMessage || error.message || "Signature failed.";
+      }
+    }
+
+    function previewCreate() {
+      const memo = $("#memo")?.value || "memo";
+      $("#createPreview").textContent = `createEncryptedInput(${short(state.contractAddress)}, ${short(state.wallet)})\n  vendor: ${$("#vendor")?.value || "0x..."}\n  verifier: ${$("#verifier")?.value || "none"}\n  amount: euint64(${$("#amount")?.value || "0"})\n  memoHash: ${normalizeMemoHash(memo)}\n  permissions: buyer, vendor, verifier, escrow`;
+    }
+
+    async function readDeal() {
+      try {
+        const contract = getContract();
+        const current = selectedDeal();
+        const deal = await contract.getDeal(BigInt(current.id));
+        const synced = deals.find((item) => item.id === current.id);
+        if (synced) {
+          synced.buyer = short(deal.buyer);
+          synced.vendor = short(deal.vendor);
+          synced.verifier = deal.verifier === ZeroAddress ? "none" : short(deal.verifier);
+          synced.memo = short(deal.memoHash);
+          synced.deposit = formatEther(deal.deposit);
+          synced.funded = deal.funded;
+          synced.buyerApproved = deal.buyerApproved;
+          synced.verifierApproved = deal.verifierApproved;
+          synced.released = deal.released;
+          synced.updated = "synced now";
+          synced.progress = [deal.funded, deal.buyerApproved, deal.verifierApproved, deal.released].filter(Boolean).length * 25;
+          synced.status = deal.released ? "Released" : deal.funded && deal.buyerApproved && deal.verifierApproved ? "Ready to release" : deal.funded && deal.buyerApproved ? "Awaiting verifier" : deal.funded ? "Funded" : "Created";
+          synced.kind = synced.status === "Awaiting verifier" || synced.status === "Created" ? "warn" : "ok";
+        }
+        state.txLog = [`buyer: ${deal.buyer}`, `vendor: ${deal.vendor}`, `verifier: ${deal.verifier}`, `memo: ${deal.memoHash}`, `deposit: ${formatEther(deal.deposit)} ETH`, `funded: ${deal.funded}`, `buyerApproved: ${deal.buyerApproved}`, `verifierApproved: ${deal.verifierApproved}`, `released: ${deal.released}`].join("\n");
+        toast("Deal status read from contract.");
+        render();
+      } catch (error) {
+        state.txLog = error.shortMessage || error.message || "Read failed.";
+        toast(state.txLog);
+      }
+    }
+
+    function wire() {
+      document.querySelectorAll("[data-jump]").forEach((node) => node.addEventListener("click", () => setView(node.dataset.jump)));
+      document.querySelectorAll("[data-select]").forEach((row) => row.addEventListener("click", () => { state.selected = Number(row.dataset.select); setView(state.view === "overview" ? "workspace" : state.view); }));
+      document.querySelectorAll("[data-chain]").forEach((node) => node.addEventListener("click", () => runChain(node.dataset.chain)));
+      document.querySelectorAll("[data-copy]").forEach((node) => node.addEventListener("click", async () => { await navigator.clipboard.writeText(node.dataset.copy); toast(`Copied ${node.dataset.copy}`); }));
+      document.querySelectorAll("[data-view-link]").forEach((node) => node.addEventListener("click", (event) => { event.preventDefault(); setView(node.dataset.viewLink); }));
+      $("#search")?.addEventListener("input", (event) => { state.query = event.target.value; render(); });
+      $("#filter")?.addEventListener("change", (event) => { state.filter = event.target.value; render(); });
+      $("#createForm")?.addEventListener("submit", createDeal);
+      $("#previewCreate")?.addEventListener("click", () => { try { previewCreate(); } catch (error) { toast(error.message); } });
+      $("#signDecrypt")?.addEventListener("click", signDecrypt);
+      $("#copyHandle")?.addEventListener("click", async () => { await navigator.clipboard.writeText(selectedDeal().handle); toast("Encrypted handle copied."); });
+      $("#saveSettings")?.addEventListener("click", () => {
+        state.contractAddress = $("#settingsContract").value.trim();
+        state.relayerUrl = $("#settingsRelayer").value.trim();
+        localStorage.setItem("quietsettle.contract", state.contractAddress);
+        localStorage.setItem("quietsettle.relayer", state.relayerUrl);
+        toast("Settings saved.");
+        render();
+      });
+      $("#readDeal")?.addEventListener("click", readDeal);
+      document.querySelectorAll("[data-read-current]").forEach((node) => node.addEventListener("click", readDeal));
+    }
+
+    $("#connectWallet").addEventListener("click", connectWallet);
+    $("#settingsBtn").addEventListener("click", () => setView("developer"));
+    document.querySelectorAll("[data-mode]").forEach((button) => button.addEventListener("click", () => {
+      document.querySelectorAll("[data-mode]").forEach((node) => node.classList.toggle("active", node === button));
+      setView(button.dataset.mode === "builder" ? "developer" : "overview");
+    }));
+
+    const aliases = { top: "overview", contract: "create", docs: "developer" };
+    const initial = location.hash.replace("#", "");
+    const resolved = aliases[initial] || initial;
+    if (nav.some((item) => item.id === resolved)) state.view = resolved;
+    render();
+  </script>
+</body>
+</html>

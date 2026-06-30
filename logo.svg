@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">QuietSettle logo</title>
+  <desc id="desc">A Zama-green sealed settlement mark.</desc>
+  <circle cx="128" cy="128" r="94" fill="#abe338"/>
+  <circle cx="128" cy="128" r="93" fill="none" stroke="#080908" stroke-width="10"/>
+  <path d="M87 129c0-25 17-44 41-44s41 19 41 44v15h-24v-15c0-13-7-22-17-22s-17 9-17 22v15H87v-15z" fill="#080908"/>
+  <rect x="70" y="134" width="116" height="56" rx="15" fill="#080908"/>
+  <path d="M99 162h58" stroke="#abe338" stroke-width="10" stroke-linecap="round"/>
+  <circle cx="178" cy="77" r="10" fill="#ffd208" stroke="#080908" stroke-width="6"/>
+</svg>

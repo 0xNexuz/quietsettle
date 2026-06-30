@@ -1,0 +1,1029 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>QuietSettle - Confidential Milestone Escrow</title>
+  <meta name="description" content="A production-ready Zama FHEVM app for confidential milestone escrow, approvals, settlement, and authorized decryption." />
+  <meta name="theme-color" content="#abe338" />
+  <link rel="icon" href="./favicon.svg" type="image/svg+xml" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <style>
+    :root {
+      --zama: #abe338;
+      --gold: #ffd208;
+      --ink: #080908;
+      --ink-2: #101211;
+      --paper: #f4f2ed;
+      --paper-2: #ebe8df;
+      --line-dark: rgba(10,10,10,.13);
+      --line-light: rgba(255,255,255,.11);
+      --muted-dark: rgba(17,17,17,.56);
+      --muted-light: rgba(255,255,255,.58);
+      --soft-light: rgba(255,255,255,.78);
+      --ok: #64d96c;
+      --warn: #ffd208;
+      --bad: #ff7968;
+      --radius: 8px;
+      --max: 1240px;
+      --shadow: 0 28px 90px rgba(0,0,0,.18);
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--paper);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      letter-spacing: 0;
+    }
+
+    a { color: inherit; text-decoration: none; }
+    button, input, select { font: inherit; letter-spacing: 0; }
+    button { cursor: pointer; }
+    img { max-width: 100%; display: block; }
+    h1, h2, h3, p { margin: 0; }
+    .mono { font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace; }
+
+    .topbar {
+      height: 50px;
+      display: grid;
+      grid-template-columns: 230px minmax(0, 1fr) 260px;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid var(--line-dark);
+      background: rgba(244,242,237,.88);
+      backdrop-filter: blur(18px);
+    }
+
+    .brand {
+      height: 100%;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 0 20px;
+      border-right: 1px solid var(--line-dark);
+      font-size: 14px;
+      font-weight: 760;
+    }
+
+    .brand img {
+      width: 24px;
+      height: 24px;
+      border-radius: 0;
+      object-fit: contain;
+      transform: translateY(-.5px);
+    }
+
+    .brand span {
+      line-height: 1;
+      transform: translateY(-.5px);
+    }
+
+    .nav {
+      display: flex;
+      justify-content: center;
+      gap: 3px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .nav::-webkit-scrollbar { display: none; }
+    .nav a {
+      min-height: 31px;
+      display: inline-flex;
+      align-items: center;
+      padding: 7px 10px;
+      border: 1px solid transparent;
+      border-radius: 5px;
+      color: var(--muted-dark);
+      font-size: 11px;
+      font-weight: 690;
+      white-space: nowrap;
+    }
+
+    .nav a:hover { border-color: var(--line-dark); color: var(--ink); background: rgba(0,0,0,.035); }
+
+    .top-actions {
+      height: 100%;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 8px;
+      padding: 0 16px;
+      border-left: 1px solid var(--line-dark);
+    }
+
+    .pill {
+      min-height: 31px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid var(--line-dark);
+      border-radius: 5px;
+      background: rgba(255,255,255,.45);
+      color: rgba(17,17,17,.72);
+      padding: 7px 10px;
+      font-size: 11px;
+      font-weight: 760;
+      white-space: nowrap;
+    }
+
+    .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--ok);
+      box-shadow: 0 0 0 4px rgba(100,217,108,.12);
+    }
+
+    .btn {
+      min-height: 40px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border: 1px solid var(--line-dark);
+      border-radius: 6px;
+      background: rgba(255,255,255,.58);
+      color: var(--ink);
+      padding: 10px 14px;
+      font-size: 13px;
+      font-weight: 780;
+      white-space: nowrap;
+    }
+
+    .btn.primary { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+    .btn.zama { background: var(--zama); border-color: var(--zama); color: #071006; }
+    .btn.ghost { background: transparent; }
+    .btn.dark { border-color: rgba(255,255,255,.13); background: rgba(255,255,255,.055); color: var(--paper); }
+    .btn.dark.primary { background: var(--zama); border-color: var(--zama); color: #071006; }
+
+    .section {
+      position: relative;
+      border-bottom: 1px solid var(--line-dark);
+      overflow: hidden;
+    }
+
+    .section.dark {
+      color: var(--paper);
+      background:
+        linear-gradient(rgba(255,255,255,.032) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px),
+        var(--ink);
+      background-size: 260px 92px;
+      border-color: rgba(255,255,255,.1);
+    }
+
+    .wrap {
+      width: min(var(--max), calc(100% - 36px));
+      margin: 0 auto;
+    }
+
+    .hero {
+      min-height: calc(100vh - 50px);
+      display: grid;
+      grid-template-rows: auto minmax(400px, 1fr);
+    }
+
+    .hero-copy {
+      min-height: 320px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 56px 18px 34px;
+    }
+
+    h1 {
+      max-width: 900px;
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(46px, 6vw, 88px);
+      line-height: .92;
+      font-weight: 520;
+      letter-spacing: -.01em;
+    }
+
+    h2 {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(34px, 4.2vw, 62px);
+      line-height: .96;
+      font-weight: 520;
+      letter-spacing: -.01em;
+    }
+
+    h3 { font-size: 18px; line-height: 1.2; font-weight: 760; }
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 14px;
+      color: var(--muted-dark);
+      font-size: 11px;
+      font-weight: 820;
+      text-transform: uppercase;
+    }
+
+    .dark .eyebrow { color: rgba(171,227,56,.82); }
+    .lead {
+      max-width: 650px;
+      margin: 16px auto 0;
+      color: var(--muted-dark);
+      font-size: 15px;
+      line-height: 1.55;
+    }
+
+    .dark .lead, .dark .muted { color: var(--muted-light); }
+    .muted { color: var(--muted-dark); }
+
+    .hero-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .hero-media {
+      position: relative;
+      margin: 0 auto 14px;
+      width: calc(100% - 28px);
+      max-width: 1420px;
+      border: 1px solid var(--line-dark);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow);
+      background: #cdddfc;
+    }
+
+    .hero-media img { width: 100%; height: 100%; object-fit: cover; min-height: 420px; }
+
+    .live-card {
+      position: absolute;
+      right: clamp(14px, 4vw, 54px);
+      bottom: clamp(14px, 4vw, 48px);
+      width: min(390px, calc(100% - 28px));
+      padding: 14px;
+      border: 1px solid rgba(255,255,255,.42);
+      border-radius: var(--radius);
+      background: rgba(8,9,8,.66);
+      color: var(--paper);
+      backdrop-filter: blur(18px);
+    }
+
+    .live-card header, .mini-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .live-card header {
+      padding-bottom: 9px;
+      border-bottom: 1px solid rgba(255,255,255,.13);
+      font-size: 11px;
+      font-weight: 780;
+      color: rgba(255,255,255,.7);
+    }
+
+    .mini-row {
+      padding: 9px 0;
+      border-bottom: 1px solid rgba(255,255,255,.1);
+      color: rgba(255,255,255,.58);
+      font-size: 12px;
+    }
+
+    .mini-row:last-child { border-bottom: 0; }
+    .mini-row b { color: rgba(255,255,255,.88); }
+    .section:not(.dark) .panel .mini-row {
+      border-bottom-color: rgba(10,10,10,.1);
+      color: rgba(17,17,17,.55);
+    }
+    .section:not(.dark) .panel .mini-row b { color: rgba(17,17,17,.82); }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap: 18px;
+      padding: 84px 0;
+    }
+
+    .copy-block { grid-column: span 5; align-self: center; }
+    .visual-block { grid-column: span 7; }
+    .copy-block.wide { grid-column: span 7; }
+    .visual-block.narrow { grid-column: span 5; }
+
+    .image-frame {
+      border: 1px solid currentColor;
+      border-color: var(--line-dark);
+      border-radius: var(--radius);
+      overflow: hidden;
+      background: rgba(255,255,255,.34);
+      box-shadow: var(--shadow);
+    }
+
+    .dark .image-frame {
+      border-color: rgba(255,255,255,.13);
+      background: rgba(255,255,255,.04);
+      box-shadow: 0 28px 90px rgba(0,0,0,.34);
+    }
+
+    .image-frame img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+
+    .panel {
+      border: 1px solid var(--line-dark);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.46);
+      padding: 18px;
+    }
+
+    .dark .panel { border-color: rgba(255,255,255,.12); background: rgba(255,255,255,.045); }
+
+    .proof-list {
+      display: grid;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .proof {
+      display: grid;
+      grid-template-columns: 32px minmax(0, 1fr);
+      gap: 12px;
+      padding: 14px;
+      border: 1px solid var(--line-dark);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.45);
+    }
+
+    .proof i {
+      width: 30px;
+      height: 30px;
+      display: grid;
+      place-items: center;
+      border-radius: 50%;
+      background: var(--zama);
+      color: #071006;
+      font-style: normal;
+      font-weight: 900;
+    }
+
+    .table-wrap {
+      margin-top: 24px;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: var(--radius);
+      overflow: auto;
+      background: rgba(0,0,0,.18);
+    }
+
+    table { width: 100%; min-width: 860px; border-collapse: collapse; }
+    th, td {
+      padding: 15px 16px;
+      border-bottom: 1px solid rgba(255,255,255,.09);
+      color: var(--soft-light);
+      text-align: left;
+      font-size: 13px;
+      vertical-align: middle;
+    }
+
+    th {
+      color: rgba(255,255,255,.5);
+      font-size: 11px;
+      text-transform: uppercase;
+      font-weight: 840;
+    }
+
+    tr[data-select] { cursor: pointer; }
+    tr[data-select]:hover td, tr.selected td { background: rgba(171,227,56,.06); }
+    tr.selected td:first-child { box-shadow: inset 3px 0 0 var(--zama); }
+
+    .badge {
+      min-height: 27px;
+      width: fit-content;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.13);
+      background: rgba(255,255,255,.06);
+      color: var(--soft-light);
+      font-size: 12px;
+      font-weight: 760;
+      white-space: nowrap;
+    }
+
+    .badge.ok { color: var(--ok); border-color: rgba(100,217,108,.28); background: rgba(100,217,108,.1); }
+    .badge.warn { color: var(--warn); border-color: rgba(255,210,8,.28); background: rgba(255,210,8,.1); }
+    .badge.lock { color: var(--zama); border-color: rgba(171,227,56,.32); background: rgba(171,227,56,.09); }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      margin-top: 22px;
+    }
+
+    .field { display: grid; gap: 7px; }
+    label { font-size: 11px; font-weight: 820; color: var(--muted-dark); text-transform: uppercase; }
+    .dark label { color: rgba(255,255,255,.52); }
+    input {
+      width: 100%;
+      min-height: 43px;
+      border: 1px solid var(--line-dark);
+      border-radius: 6px;
+      background: rgba(255,255,255,.58);
+      color: var(--ink);
+      padding: 10px 12px;
+      outline: none;
+    }
+
+    .dark input { border-color: rgba(255,255,255,.13); background: rgba(255,255,255,.05); color: var(--paper); }
+    input:focus { border-color: rgba(171,227,56,.7); box-shadow: 0 0 0 3px rgba(171,227,56,.1); }
+
+    .console {
+      min-height: 170px;
+      max-height: 260px;
+      overflow: auto;
+      margin-top: 18px;
+      padding: 14px;
+      border: 1px solid rgba(171,227,56,.26);
+      border-radius: var(--radius);
+      background: rgba(171,227,56,.07);
+      color: var(--soft-light);
+      white-space: pre-wrap;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .rail {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    .rail-step {
+      min-height: 142px;
+      display: grid;
+      align-content: space-between;
+      gap: 12px;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: var(--radius);
+      background: rgba(255,255,255,.04);
+      padding: 14px;
+    }
+
+    .rail-step.active { border-color: rgba(171,227,56,.42); background: rgba(171,227,56,.075); }
+
+    .cta-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 22px;
+    }
+
+    .code-tabs {
+      display: flex;
+      gap: 6px;
+      margin-top: 22px;
+      padding: 4px;
+      width: fit-content;
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 7px;
+      background: rgba(0,0,0,.18);
+    }
+
+    .code-tabs button {
+      min-height: 34px;
+      border: 0;
+      border-radius: 5px;
+      background: transparent;
+      color: var(--muted-light);
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 760;
+    }
+
+    .code-tabs button.active { background: var(--zama); color: #071006; }
+
+    .footer {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 18px;
+      padding: 30px 0;
+      color: var(--muted-light);
+      font-size: 12px;
+    }
+
+    .toast {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 40;
+      max-width: min(640px, calc(100vw - 36px));
+      padding: 14px 16px;
+      border: 1px solid rgba(171,227,56,.36);
+      border-radius: var(--radius);
+      background: rgba(8,9,8,.95);
+      color: var(--paper);
+      box-shadow: 0 24px 90px rgba(0,0,0,.32);
+      white-space: pre-wrap;
+      opacity: 0;
+      transform: translateY(14px);
+      pointer-events: none;
+      transition: .22s ease;
+    }
+
+    .toast.show { opacity: 1; transform: none; }
+
+    @media (max-width: 980px) {
+      .topbar { grid-template-columns: 190px minmax(0, 1fr) auto; }
+      .pill { display: none; }
+      .grid { grid-template-columns: 1fr; padding: 64px 0; }
+      .copy-block, .copy-block.wide, .visual-block, .visual-block.narrow { grid-column: 1; }
+      .rail, .form-grid { grid-template-columns: 1fr; }
+      .live-card { position: static; width: auto; margin: 12px; }
+      .hero-media img { min-height: 300px; }
+    }
+
+    @media (max-width: 680px) {
+      .topbar { grid-template-columns: 1fr auto; }
+      .nav { display: none; }
+      .top-actions { border-left: 0; }
+      .brand { padding: 0 14px; border-right: 0; }
+      .connect-text { display: none; }
+      .wrap { width: min(100% - 24px, var(--max)); }
+      h1 { font-size: 42px; }
+      h2 { font-size: 36px; }
+      .hero-copy { min-height: 280px; }
+      .footer { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="brand" href="#hero" aria-label="QuietSettle home"><img src="./logo.svg" alt="" /><span>QuietSettle</span></a>
+    <nav class="nav" aria-label="Primary navigation">
+      <a href="#proof">Proof</a>
+      <a href="#registry">Registry</a>
+      <a href="#workspace">Workspace</a>
+      <a href="#create">Create</a>
+      <a href="#settle">Settle</a>
+      <a href="#decrypt">Decrypt</a>
+      <a href="#developer">Developer</a>
+    </nav>
+    <div class="top-actions">
+      <span class="pill"><span class="dot"></span>Sepolia</span>
+      <button class="btn primary" id="connectWallet"><span class="connect-text">Connect wallet</span><span id="walletShort">Connect</span></button>
+    </div>
+  </header>
+
+  <main>
+    <section class="section hero" id="hero">
+      <div class="hero-copy">
+        <div>
+          <h1>Private escrow for work that cannot leak.</h1>
+          <p class="lead">QuietSettle creates encrypted milestone deals, funds real Sepolia escrow deposits, records approvals, releases vendors, and reveals confidential values only through authorized Zama user decryption.</p>
+          <div class="hero-actions">
+            <a class="btn primary" href="#create">Brief the escrow</a>
+            <a class="btn ghost" href="#registry">Open deal room</a>
+          </div>
+        </div>
+      </div>
+      <div class="hero-media">
+        <img src="./quietsettle-website-images/section-01-hero.png" alt="QuietSettle editorial encrypted settlement hero" />
+        <aside class="live-card">
+          <header><span>Workspace cache</span><button class="btn dark" id="refreshSelected" style="min-height:28px;padding:5px 8px;font-size:11px">Refresh selected</button></header>
+          <div class="mini-row"><span>Loaded deals</span><b id="loadedDeals">4</b></div>
+          <div class="mini-row"><span>Ready in cache</span><b id="readyDeals">1</b></div>
+          <div class="mini-row"><span>Selected handle</span><b class="mono" id="selectedHandle">euint64: 0x8a...1d4e</b></div>
+          <div class="mini-row"><span>Live source</span><b id="contractState">Set contract</b></div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section" id="proof">
+      <div class="wrap grid">
+        <div class="copy-block">
+          <span class="eyebrow">Real state, clearly labeled</span>
+          <h2>Confidential amounts. Auditable movement.</h2>
+          <p class="lead">The website does not pretend cached interface rows are a chain index. It exposes the distinction: workspace data is local until a selected deal is refreshed from the configured escrow contract.</p>
+          <div class="proof-list">
+            <div class="proof"><i>1</i><div><h3>Encrypted values</h3><p class="muted">Milestone amounts enter through the Zama relayer encryption flow as `euint64` handles.</p></div></div>
+            <div class="proof"><i>2</i><div><h3>Explicit reads</h3><p class="muted">Contract state updates when the builder connects a wallet and calls the selected deal read.</p></div></div>
+            <div class="proof"><i>3</i><div><h3>Guarded settlement</h3><p class="muted">Release requires funding plus buyer and verifier approval; refund is guarded before approval.</p></div></div>
+          </div>
+        </div>
+        <div class="visual-block">
+          <div class="image-frame"><img src="./quietsettle-website-images/section-02-proof.png" alt="QuietSettle proof and real-state website section" /></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section dark" id="registry">
+      <div class="wrap grid">
+        <div class="copy-block wide">
+          <span class="eyebrow">Deal registry</span>
+          <h2>Searchable escrow ledger for public metadata.</h2>
+          <p class="lead">Rows expose parties, memo hashes, and approval state. Confidential amount values stay masked as encrypted handles until an authorized decryption request is signed.</p>
+          <div class="cta-row">
+            <input id="search" placeholder="Search deal, address, counterparty, or status" />
+            <button class="btn dark" id="clearSearch">Clear</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Deal</th><th>Counterparty</th><th>Milestones</th><th>Private value</th><th>Status</th><th>Updated</th></tr></thead>
+              <tbody id="dealRows"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="visual-block narrow">
+          <div class="image-frame"><img src="./quietsettle-website-images/section-03-registry.png" alt="QuietSettle confidential deal registry reference" /></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section dark" id="workspace">
+      <div class="wrap grid">
+        <div class="visual-block">
+          <div class="image-frame"><img src="./quietsettle-website-images/section-04-workspace.png" alt="QuietSettle selected deal workspace reference" /></div>
+        </div>
+        <div class="copy-block">
+          <span class="eyebrow">Selected workspace</span>
+          <h2 id="workspaceTitle">QS-2026-0002</h2>
+          <p class="lead">Inspect contract context, parties, memo hash, encrypted handle, and the approval rail before settlement.</p>
+          <div class="panel" style="margin-top:22px">
+            <div class="mini-row"><span>Buyer</span><b class="mono" id="buyerValue">0x7B73...C9d2</b></div>
+            <div class="mini-row"><span>Vendor</span><b class="mono" id="vendorValue">0xD91a...3b8E</b></div>
+            <div class="mini-row"><span>Verifier</span><b class="mono" id="verifierValue">0xF43d...991A</b></div>
+            <div class="mini-row"><span>Memo hash</span><b class="mono" id="memoValue">0x39bd...f7C2</b></div>
+            <div class="mini-row"><span>Deposit</span><b id="depositValue">0.18 ETH</b></div>
+          </div>
+          <div class="rail">
+            <div class="rail-step active"><b>Created</b><span class="badge ok">on-chain</span></div>
+            <div class="rail-step active"><b>Funded</b><span class="badge ok">deposit</span></div>
+            <div class="rail-step active"><b>Buyer</b><span class="badge ok">approved</span></div>
+            <div class="rail-step" id="verifierStep"><b>Verifier</b><span class="badge warn">waiting</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="create">
+      <div class="wrap grid">
+        <div class="copy-block">
+          <span class="eyebrow">Create deal</span>
+          <h2>Encrypt the milestone before the deal is opened.</h2>
+          <p class="lead">The form validates addresses and memo input, then requires the official relayer encryption object before `createDeal` can be sent.</p>
+          <form id="createForm" class="form-grid">
+            <div class="field"><label>Vendor address</label><input id="vendor" placeholder="0x..." autocomplete="off" /></div>
+            <div class="field"><label>Verifier address</label><input id="verifier" placeholder="0x... optional" autocomplete="off" /></div>
+            <div class="field"><label>Private amount</label><input id="amount" inputmode="numeric" placeholder="2500" /></div>
+            <div class="field"><label>Memo reference</label><input id="memo" placeholder="invoice CID, PO number, or 0x hash" /></div>
+            <button class="btn primary" type="submit">Encrypt and create</button>
+            <button class="btn ghost" id="previewCreate" type="button">Preview payload</button>
+          </form>
+          <div class="console mono" id="createPreview">createEncryptedInput(contract, wallet)
+  add64(privateAmount)
+  encrypt()
+  createDeal(vendor, verifier, handle, proof, memoHash)</div>
+        </div>
+        <div class="visual-block">
+          <div class="image-frame"><img src="./quietsettle-website-images/section-05-create.png" alt="QuietSettle create deal flow reference" /></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section dark" id="settle">
+      <div class="wrap grid">
+        <div class="copy-block wide">
+          <span class="eyebrow">Settlement controls</span>
+          <h2>Fund, approve, release, or refund through guarded contract calls.</h2>
+          <p class="lead">Every visible control either routes, copies, signs, saves settings, or attempts a real wallet transaction against the configured Sepolia escrow contract.</p>
+          <div class="form-grid">
+            <div class="field"><label>Escrow contract</label><input id="contractAddress" placeholder="0x..." /></div>
+            <div class="field"><label>Relayer endpoint</label><input id="relayerUrl" placeholder="https://..." /></div>
+            <div class="field"><label>Deposit ETH</label><input id="depositInput" value="0.18" inputmode="decimal" /></div>
+            <button class="btn dark primary" id="saveSettings">Save settings</button>
+          </div>
+          <div class="cta-row">
+            <button class="btn dark primary" data-chain="fund">Fund escrow</button>
+            <button class="btn dark" data-chain="approveBuyer">Buyer approve</button>
+            <button class="btn dark" data-chain="approveVerifier">Verifier approve</button>
+            <button class="btn dark primary" data-chain="release">Release vendor</button>
+            <button class="btn dark" data-chain="refund">Refund buyer</button>
+          </div>
+          <div class="console mono" id="txLog">Ready. Connect a wallet and save a deployed escrow contract address.</div>
+        </div>
+        <div class="visual-block narrow">
+          <div class="image-frame"><img src="./quietsettle-website-images/section-06-settlement.png" alt="QuietSettle settlement workflow reference" /></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="decrypt">
+      <div class="wrap grid">
+        <div class="visual-block">
+          <div class="image-frame"><img src="./quietsettle-website-images/section-07-decrypt.png" alt="QuietSettle EIP-712 confidential decryption reference" /></div>
+        </div>
+        <div class="copy-block">
+          <span class="eyebrow">User decryption</span>
+          <h2>Reveal values only to authorized parties.</h2>
+          <p class="lead">The user signs a typed EIP-712 request for the selected encrypted handle. The relayer flow receives the signature and returns the authorized clear value.</p>
+          <div class="panel" style="margin-top:22px">
+            <div class="mini-row"><span>Deal</span><b id="decryptDeal">QS-2026-0002</b></div>
+            <div class="mini-row"><span>Handle</span><b class="mono" id="decryptHandle">euint64: 0x8a...1d4e</b></div>
+            <div class="mini-row"><span>Access</span><b>buyer, vendor, verifier</b></div>
+          </div>
+          <div class="cta-row">
+            <button class="btn primary" id="signDecrypt">Sign decrypt request</button>
+            <button class="btn ghost" id="copyHandle">Copy handle</button>
+          </div>
+          <div class="console mono" id="decryptResult">Waiting for wallet signature.</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section dark" id="developer">
+      <div class="wrap grid">
+        <div class="copy-block">
+          <span class="eyebrow">Developer reference</span>
+          <h2>Ship confidential settlement with real escrow state.</h2>
+          <p class="lead">QuietSettle includes a Solidity escrow contract, a frontend relayer encryption path, wallet transactions, and typed-data decryption requests.</p>
+          <div class="code-tabs">
+            <button class="active" data-code="solidity">Solidity</button>
+            <button data-code="relayer">Relayer</button>
+            <button data-code="frontend">Frontend</button>
+          </div>
+          <div class="console mono" id="codePanel"></div>
+          <div class="cta-row">
+            <a class="btn dark primary" href="./QuietSettle.md">Open docs</a>
+            <a class="btn dark" href="./ConfidentialMilestoneEscrow.sol">View contract</a>
+            <button class="btn dark" id="copySnippet">Copy snippet</button>
+          </div>
+        </div>
+        <div class="visual-block">
+          <div class="image-frame"><img src="./quietsettle-website-images/section-08-developer.png" alt="QuietSettle developer reference and closing CTA" /></div>
+        </div>
+      </div>
+      <footer class="wrap footer">
+        <span>QuietSettle · Confidential milestone escrow for Zama FHEVM · Sepolia first</span>
+        <span><a href="./QuietSettle.md">Docs</a> · <a href="./ConfidentialMilestoneEscrow.sol">Solidity</a> · <a href="#hero">Back to top</a></span>
+      </footer>
+    </section>
+  </main>
+
+  <div class="toast mono" id="toast"></div>
+
+  <script type="module">
+    import { BrowserProvider, Contract, ZeroAddress, formatEther, id, isAddress, parseEther } from "https://esm.sh/ethers@6.13.5";
+
+    const escrowAbi = [
+      "function createDeal(address vendor,address verifier,bytes32 encryptedAmount,bytes inputProof,bytes32 memoHash) returns (uint256)",
+      "function fund(uint256 dealId) payable",
+      "function approveByBuyer(uint256 dealId)",
+      "function approveByVerifier(uint256 dealId)",
+      "function release(uint256 dealId)",
+      "function refund(uint256 dealId)",
+      "function getDeal(uint256 dealId) view returns (address buyer,address vendor,address verifier,bytes32 memoHash,uint256 deposit,bool funded,bool buyerApproved,bool verifierApproved,bool released)"
+    ];
+
+    const deals = [
+      { id: 0, code: "QS-2026-0001", buyer: "0x7B73...C9d2", vendor: "0x9cE1...d2F4", verifier: "0xA1f8...2b9C", counterparty: "Acme Labs", memo: "0x91bd...d4e7", handle: "euint64: 0x6f...a3c9", deposit: "0.42", milestones: "5 / 5", status: "Ready to release", kind: "ok", funded: true, buyerApproved: true, verifierApproved: true, released: false, updated: "cache" },
+      { id: 1, code: "QS-2026-0002", buyer: "0x7B73...C9d2", vendor: "0xD91a...3b8E", verifier: "0xF43d...991A", counterparty: "BuildWorks", memo: "0x39bd...f7C2", handle: "euint64: 0x8a...1d4e", deposit: "0.18", milestones: "3 / 4", status: "Awaiting verifier", kind: "warn", funded: true, buyerApproved: true, verifierApproved: false, released: false, updated: "cache" },
+      { id: 2, code: "QS-2026-0003", buyer: "0x51Af...10dA", vendor: "0x8F7b...6cA9", verifier: "none", counterparty: "Infra Stack", memo: "0xC11e...aa2B", handle: "euint64: 0x2b...9f71", deposit: "0.31", milestones: "2 / 6", status: "Funded", kind: "ok", funded: true, buyerApproved: false, verifierApproved: true, released: false, updated: "cache" },
+      { id: 3, code: "QS-2026-0004", buyer: "0xA66d...Bb44", vendor: "0xA6d3...Bb44", verifier: "0x81F0...42cA", counterparty: "DeltaOps", memo: "0x17D3...e91F", handle: "euint64: 0x9e...7b21", deposit: "0.77", milestones: "4 / 4", status: "Released", kind: "ok", funded: true, buyerApproved: true, verifierApproved: true, released: true, updated: "cache" }
+    ];
+
+    const snippets = {
+      solidity: `contract ConfidentialMilestoneEscrow is SepoliaConfig {
+  function createDeal(
+    address vendor,
+    address verifier,
+    externalEuint64 encryptedAmount,
+    bytes calldata inputProof,
+    bytes32 memoHash
+  ) external returns (uint256 dealId);
+}`,
+      relayer: `const input = relayer.createEncryptedInput(contract, account);
+input.add64(BigInt(privateAmount));
+const encrypted = await input.encrypt();
+await escrow.createDeal(vendor, verifier, encrypted.handles[0], encrypted.inputProof, memoHash);`,
+      frontend: `const signature = await signer.signTypedData(domain, types, {
+  dealId,
+  handle,
+  purpose: "View confidential milestone amount"
+});`
+    };
+
+    const state = {
+      selected: 1,
+      query: "",
+      wallet: "",
+      provider: null,
+      signer: null,
+      contractAddress: localStorage.getItem("quietsettle.contract") || "",
+      relayerUrl: localStorage.getItem("quietsettle.relayer") || "",
+      code: "solidity"
+    };
+
+    const $ = (selector) => document.querySelector(selector);
+    const $$ = (selector) => Array.from(document.querySelectorAll(selector));
+    const selectedDeal = () => deals.find((deal) => deal.id === state.selected) || deals[0];
+    const short = (value) => value ? `${String(value).slice(0, 6)}...${String(value).slice(-4)}` : "not set";
+    const toast = (message) => {
+      const node = $("#toast");
+      node.textContent = message;
+      node.classList.add("show");
+      clearTimeout(node.timer);
+      node.timer = setTimeout(() => node.classList.remove("show"), 4200);
+    };
+
+    function rows() {
+      const query = state.query.toLowerCase();
+      return deals.filter((deal) => `${deal.code} ${deal.counterparty} ${deal.vendor} ${deal.status}`.toLowerCase().includes(query)).map((deal) => `
+        <tr data-select="${deal.id}" class="${deal.id === state.selected ? "selected" : ""}">
+          <td><b>${deal.code}</b><br><span class="mono">${deal.memo}</span></td>
+          <td>${deal.counterparty}<br><span class="mono">${deal.vendor}</span></td>
+          <td>${deal.milestones}</td>
+          <td><span class="badge lock">${deal.handle}</span></td>
+          <td><span class="badge ${deal.kind}">${deal.status}</span></td>
+          <td>${deal.updated}</td>
+        </tr>
+      `).join("");
+    }
+
+    function paint() {
+      const deal = selectedDeal();
+      $("#dealRows").innerHTML = rows();
+      $("#loadedDeals").textContent = deals.length;
+      $("#readyDeals").textContent = deals.filter((item) => item.status === "Ready to release").length;
+      $("#selectedHandle").textContent = deal.handle;
+      $("#contractState").textContent = state.contractAddress ? short(state.contractAddress) : "Set contract";
+      $("#workspaceTitle").textContent = deal.code;
+      $("#buyerValue").textContent = deal.buyer;
+      $("#vendorValue").textContent = deal.vendor;
+      $("#verifierValue").textContent = deal.verifier;
+      $("#memoValue").textContent = deal.memo;
+      $("#depositValue").textContent = `${deal.deposit} ETH`;
+      $("#decryptDeal").textContent = deal.code;
+      $("#decryptHandle").textContent = deal.handle;
+      $("#verifierStep").classList.toggle("active", deal.verifierApproved);
+      $("#verifierStep").innerHTML = `<b>Verifier</b><span class="badge ${deal.verifierApproved ? "ok" : "warn"}">${deal.verifierApproved ? "approved" : "waiting"}</span>`;
+      $("#contractAddress").value = state.contractAddress;
+      $("#relayerUrl").value = state.relayerUrl;
+      $("#codePanel").textContent = snippets[state.code];
+      $$("[data-code]").forEach((button) => button.classList.toggle("active", button.dataset.code === state.code));
+      $$("[data-select]").forEach((row) => row.addEventListener("click", () => { state.selected = Number(row.dataset.select); paint(); location.hash = "workspace"; }));
+    }
+
+    function getContract() {
+      if (!state.signer) throw new Error("Connect a wallet first.");
+      if (!isAddress(state.contractAddress)) throw new Error("Save a deployed escrow contract address first.");
+      return new Contract(state.contractAddress, escrowAbi, state.signer);
+    }
+
+    function normalizeMemoHash(value) {
+      const memo = value.trim();
+      if (/^0x[a-fA-F0-9]{64}$/.test(memo)) return memo;
+      if (!memo) throw new Error("Enter a memo reference.");
+      return id(memo);
+    }
+
+    async function connectWallet() {
+      if (!window.ethereum) return toast("No injected wallet found. Install MetaMask or another EIP-1193 wallet.");
+      try {
+        const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+        state.wallet = accounts[0] || "";
+        state.provider = new BrowserProvider(window.ethereum);
+        state.signer = await state.provider.getSigner();
+        $("#walletShort").textContent = short(state.wallet);
+        $(".connect-text").textContent = "Connected";
+        toast(`Wallet connected: ${state.wallet}`);
+      } catch (error) {
+        toast(error.shortMessage || error.message || "Wallet connection rejected.");
+      }
+    }
+
+    async function readSelectedDeal() {
+      try {
+        const contract = getContract();
+        const current = selectedDeal();
+        const result = await contract.getDeal(BigInt(current.id));
+        current.buyer = short(result.buyer);
+        current.vendor = short(result.vendor);
+        current.verifier = result.verifier === ZeroAddress ? "none" : short(result.verifier);
+        current.memo = short(result.memoHash);
+        current.deposit = formatEther(result.deposit);
+        current.funded = result.funded;
+        current.buyerApproved = result.buyerApproved;
+        current.verifierApproved = result.verifierApproved;
+        current.released = result.released;
+        current.updated = "synced now";
+        current.status = result.released ? "Released" : result.funded && result.buyerApproved && result.verifierApproved ? "Ready to release" : result.funded && result.buyerApproved ? "Awaiting verifier" : result.funded ? "Funded" : "Created";
+        current.kind = current.status === "Awaiting verifier" || current.status === "Created" ? "warn" : "ok";
+        $("#txLog").textContent = [`buyer: ${result.buyer}`, `vendor: ${result.vendor}`, `verifier: ${result.verifier}`, `deposit: ${formatEther(result.deposit)} ETH`, `funded: ${result.funded}`, `buyerApproved: ${result.buyerApproved}`, `verifierApproved: ${result.verifierApproved}`, `released: ${result.released}`].join("\n");
+        paint();
+        toast("Selected deal refreshed from contract.");
+      } catch (error) {
+        toast(error.shortMessage || error.message || "Contract read failed.");
+      }
+    }
+
+    async function runChain(action) {
+      try {
+        const contract = getContract();
+        const dealId = BigInt(selectedDeal().id);
+        let tx;
+        if (action === "fund") tx = await contract.fund(dealId, { value: parseEther($("#depositInput").value || selectedDeal().deposit) });
+        if (action === "approveBuyer") tx = await contract.approveByBuyer(dealId);
+        if (action === "approveVerifier") tx = await contract.approveByVerifier(dealId);
+        if (action === "release") tx = await contract.release(dealId);
+        if (action === "refund") tx = await contract.refund(dealId);
+        $("#txLog").textContent = `Submitted ${action}:\n${tx.hash}`;
+        toast(`Submitted ${action}: ${tx.hash}`);
+        await tx.wait();
+        $("#txLog").textContent = `Confirmed ${action}:\n${tx.hash}`;
+        await readSelectedDeal();
+      } catch (error) {
+        $("#txLog").textContent = error.shortMessage || error.message || "Transaction failed.";
+        toast($("#txLog").textContent);
+      }
+    }
+
+    async function createDeal(event) {
+      event.preventDefault();
+      try {
+        const contract = getContract();
+        const vendor = $("#vendor").value.trim();
+        const verifier = $("#verifier").value.trim();
+        const amount = $("#amount").value.trim();
+        const memoHash = normalizeMemoHash($("#memo").value);
+        if (!isAddress(vendor)) throw new Error("Enter a valid vendor address.");
+        if (verifier && !isAddress(verifier)) throw new Error("Verifier must be blank or a valid address.");
+        if (!/^[0-9]+$/.test(amount)) throw new Error("Private amount must be an integer.");
+        if (!state.relayerUrl.startsWith("https://")) throw new Error("Save an HTTPS relayer endpoint.");
+        if (!window.zamaRelayer?.createEncryptedInput) throw new Error("Zama relayer SDK is not loaded. Load the official SDK before encrypted createDeal can be sent.");
+        const input = window.zamaRelayer.createEncryptedInput(await contract.getAddress(), state.wallet);
+        input.add64(BigInt(amount));
+        const encrypted = await input.encrypt();
+        const tx = await contract.createDeal(vendor, verifier || ZeroAddress, encrypted.handles[0], encrypted.inputProof, memoHash);
+        $("#txLog").textContent = `Submitted createDeal:\n${tx.hash}`;
+        toast(`Submitted createDeal: ${tx.hash}`);
+        await tx.wait();
+        $("#txLog").textContent = `Confirmed createDeal:\n${tx.hash}`;
+      } catch (error) {
+        toast(error.shortMessage || error.message || "Create failed.");
+      }
+    }
+
+    function previewCreate() {
+      const memo = $("#memo").value || "memo";
+      $("#createPreview").textContent = `createEncryptedInput(${short(state.contractAddress)}, ${short(state.wallet)})
+  vendor: ${$("#vendor").value || "0x..."}
+  verifier: ${$("#verifier").value || "none"}
+  amount: euint64(${$("#amount").value || "0"})
+  memoHash: ${normalizeMemoHash(memo)}
+  permissions: buyer, vendor, verifier, escrow`;
+    }
+
+    async function signDecrypt() {
+      try {
+        if (!state.signer) throw new Error("Connect a wallet first.");
+        const deal = selectedDeal();
+        const domain = { name: "QuietSettle", version: "1", chainId: 11155111, verifyingContract: state.contractAddress || ZeroAddress };
+        const types = { DecryptRequest: [{ name: "dealId", type: "uint256" }, { name: "handle", type: "string" }, { name: "purpose", type: "string" }] };
+        const value = { dealId: deal.id, handle: deal.handle, purpose: "View confidential milestone amount" };
+        const signature = await state.signer.signTypedData(domain, types, value);
+        $("#decryptResult").textContent = `Signed EIP-712 request:\n${signature}\n\nSend this signature to the Zama user-decryption flow with ${deal.handle}.`;
+      } catch (error) {
+        $("#decryptResult").textContent = error.shortMessage || error.message || "Signature failed.";
+      }
+    }
+
+    $("#connectWallet").addEventListener("click", connectWallet);
+    $("#refreshSelected").addEventListener("click", readSelectedDeal);
+    $("#search").addEventListener("input", (event) => { state.query = event.target.value; paint(); });
+    $("#clearSearch").addEventListener("click", () => { state.query = ""; $("#search").value = ""; paint(); });
+    $("#saveSettings").addEventListener("click", () => {
+      state.contractAddress = $("#contractAddress").value.trim();
+      state.relayerUrl = $("#relayerUrl").value.trim();
+      localStorage.setItem("quietsettle.contract", state.contractAddress);
+      localStorage.setItem("quietsettle.relayer", state.relayerUrl);
+      paint();
+      toast("Settings saved.");
+    });
+    $$("[data-chain]").forEach((button) => button.addEventListener("click", () => runChain(button.dataset.chain)));
+    $("#createForm").addEventListener("submit", createDeal);
+    $("#previewCreate").addEventListener("click", () => { try { previewCreate(); } catch (error) { toast(error.message); } });
+    $("#signDecrypt").addEventListener("click", signDecrypt);
+    $("#copyHandle").addEventListener("click", async () => { await navigator.clipboard.writeText(selectedDeal().handle); toast("Encrypted handle copied."); });
+    $$("[data-code]").forEach((button) => button.addEventListener("click", () => { state.code = button.dataset.code; paint(); }));
+    $("#copySnippet").addEventListener("click", async () => { await navigator.clipboard.writeText(snippets[state.code]); toast("Snippet copied."); });
+
+    paint();
+  </script>
+</body>
+</html>
