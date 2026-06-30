@@ -576,7 +576,7 @@
     </nav>
     <div class="top-actions">
       <span class="pill"><span class="dot"></span>Sepolia</span>
-      <button class="btn primary" id="connectWallet"><span class="connect-text">Connect wallet</span><span id="walletShort">Connect</span></button>
+      <button class="btn primary" id="connectWallet"><span class="dot" id="walletDot" style="background:#ffd208;box-shadow:none"></span><span id="walletShort">Connect wallet</span></button>
     </div>
   </header>
 
@@ -823,6 +823,8 @@ await escrow.createDeal(vendor, verifier, encrypted.handles[0], encrypted.inputP
       query: "",
       wallet: "",
       provider: null,
+      walletProvider: null,
+      discoveredProviders: [],
       signer: null,
       contractAddress: localStorage.getItem("quietsettle.contract") || "",
       relayerUrl: localStorage.getItem("quietsettle.relayer") || "",
@@ -833,6 +835,11 @@ await escrow.createDeal(vendor, verifier, encrypted.handles[0], encrypted.inputP
     const $$ = (selector) => Array.from(document.querySelectorAll(selector));
     const selectedDeal = () => deals.find((deal) => deal.id === state.selected) || deals[0];
     const short = (value) => value ? `${String(value).slice(0, 6)}...${String(value).slice(-4)}` : "not set";
+    const setWalletStatus = (label, connected = false) => {
+      $("#walletShort").textContent = label;
+      $("#walletDot").style.background = connected ? "var(--ok)" : "var(--warn)";
+      $("#walletDot").style.boxShadow = connected ? "0 0 0 4px rgba(100,217,108,.12)" : "none";
+    };
     const toast = (message) => {
       const node = $("#toast");
       node.textContent = message;
@@ -879,6 +886,52 @@ await escrow.createDeal(vendor, verifier, encrypted.handles[0], encrypted.inputP
       $$("[data-select]").forEach((row) => row.addEventListener("click", () => { state.selected = Number(row.dataset.select); paint(); location.hash = "workspace"; }));
     }
 
+    function rememberProvider(provider) {
+      if (!provider || state.discoveredProviders.includes(provider)) return;
+      state.discoveredProviders.push(provider);
+      if (!state.walletProvider) state.walletProvider = provider;
+    }
+
+    function discoverWalletProviders() {
+      if (window.ethereum) rememberProvider(window.ethereum);
+      window.addEventListener("eip6963:announceProvider", (event) => {
+        rememberProvider(event.detail?.provider);
+        if (!state.wallet) setWalletStatus("Connect wallet");
+      });
+      window.dispatchEvent(new Event("eip6963:requestProvider"));
+      if (!state.walletProvider && !window.ethereum) setWalletStatus("No wallet");
+    }
+
+    function getWalletProvider() {
+      if (state.walletProvider) return state.walletProvider;
+      if (window.ethereum) {
+        rememberProvider(window.ethereum);
+        return window.ethereum;
+      }
+      return null;
+    }
+
+    async function ensureSepolia(provider) {
+      try {
+        await provider.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0xaa36a7" }] });
+      } catch (error) {
+        if (error?.code === 4902) {
+          await provider.request({
+            method: "wallet_addEthereumChain",
+            params: [{
+              chainId: "0xaa36a7",
+              chainName: "Sepolia",
+              nativeCurrency: { name: "Sepolia Ether", symbol: "ETH", decimals: 18 },
+              rpcUrls: ["https://rpc.sepolia.org"],
+              blockExplorerUrls: ["https://sepolia.etherscan.io"]
+            }]
+          });
+        } else if (error?.code !== 4001) {
+          throw error;
+        }
+      }
+    }
+
     function getContract() {
       if (!state.signer) throw new Error("Connect a wallet first.");
       if (!isAddress(state.contractAddress)) throw new Error("Save a deployed escrow contract address first.");
@@ -893,16 +946,22 @@ await escrow.createDeal(vendor, verifier, encrypted.handles[0], encrypted.inputP
     }
 
     async function connectWallet() {
-      if (!window.ethereum) return toast("No injected wallet found. Install MetaMask or another EIP-1193 wallet.");
+      const injected = getWalletProvider();
+      if (!injected) {
+        setWalletStatus("No wallet");
+        return toast("No browser wallet detected. Open this site in a wallet-enabled browser or install MetaMask/Rabby.");
+      }
       try {
-        const accounts = await window.ethereum.request({ method: "eth_requestAccounts" });
+        const accounts = await injected.request({ method: "eth_requestAccounts" });
         state.wallet = accounts[0] || "";
-        state.provider = new BrowserProvider(window.ethereum);
+        state.walletProvider = injected;
+        await ensureSepolia(injected);
+        state.provider = new BrowserProvider(injected);
         state.signer = await state.provider.getSigner();
-        $("#walletShort").textContent = short(state.wallet);
-        $(".connect-text").textContent = "Connected";
+        setWalletStatus(short(state.wallet), true);
         toast(`Wallet connected: ${state.wallet}`);
       } catch (error) {
+        setWalletStatus("Connect wallet");
         toast(error.shortMessage || error.message || "Wallet connection rejected.");
       }
     }
@@ -1003,6 +1062,7 @@ await escrow.createDeal(vendor, verifier, encrypted.handles[0], encrypted.inputP
       }
     }
 
+    discoverWalletProviders();
     $("#connectWallet").addEventListener("click", connectWallet);
     $("#refreshSelected").addEventListener("click", readSelectedDeal);
     $("#search").addEventListener("input", (event) => { state.query = event.target.value; paint(); });
